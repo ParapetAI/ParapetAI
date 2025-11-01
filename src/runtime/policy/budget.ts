@@ -1,22 +1,23 @@
 import type { TelemetryEvent } from "@parapetai/parapet/runtime/telemetry/telemetry";
 
-const tenantSpentCents: Map<string, number> = new Map();
-const routeSpentCents: Map<string, number> = new Map();
+// Track usage in micro-dollars (1e-6 USD) to preserve precision for small calls
+const tenantSpentMicros: Map<string, number> = new Map();
+const routeSpentMicros: Map<string, number> = new Map();
 
-function getTenantCents(tenant: string): number {
-  return tenantSpentCents.get(tenant) ?? 0;
+function getTenantMicros(tenant: string): number {
+  return tenantSpentMicros.get(tenant) ?? 0;
 }
 
-function getRouteCents(route: string): number {
-  return routeSpentCents.get(route) ?? 0;
+function getRouteMicros(route: string): number {
+  return routeSpentMicros.get(route) ?? 0;
 }
 
-function setTenantCents(tenant: string, cents: number): void {
-  tenantSpentCents.set(tenant, Math.max(0, cents));
+function setTenantMicros(tenant: string, micros: number): void {
+  tenantSpentMicros.set(tenant, Math.max(0, micros));
 }
 
-function setRouteCents(route: string, cents: number): void {
-  routeSpentCents.set(route, Math.max(0, cents));
+function setRouteMicros(route: string, micros: number): void {
+  routeSpentMicros.set(route, Math.max(0, micros));
 }
 
 export function checkAndReserve(
@@ -25,39 +26,50 @@ export function checkAndReserve(
   estCostUsd: number,
   routeCapUsd: number,
   tenantCapUsd: number
-): { ok: true; budgetBeforeUsd: number } | { ok: false; reason: "budget_exceeded"; budgetBeforeUsd: number } {
-  const estCents = Math.round(estCostUsd * 100);
-  const tenantBeforeCents = getTenantCents(tenant);
-  const routeBeforeCents = getRouteCents(route);
+):
+  | { ok: true; tenantBudgetBeforeUsd: number; routeBudgetBeforeUsd: number }
+  | { ok: false; reason: "budget_exceeded"; tenantBudgetBeforeUsd: number; routeBudgetBeforeUsd: number } {
+  const estMicros = Math.round(estCostUsd * 1_000_000);
+  const tenantBeforeMicros = getTenantMicros(tenant);
+  const routeBeforeMicros = getRouteMicros(route);
 
-  const wouldTenant = tenantBeforeCents + estCents;
-  const wouldRoute = routeBeforeCents + estCents;
-  const tenantCapCents = Math.round(tenantCapUsd * 100);
-  const routeCapCents = Math.round(routeCapUsd * 100);
+  const wouldTenant = tenantBeforeMicros + estMicros;
+  const wouldRoute = routeBeforeMicros + estMicros;
+  const tenantCapMicros = Math.round(tenantCapUsd * 1_000_000);
+  const routeCapMicros = Math.round(routeCapUsd * 1_000_000);
 
-  if (wouldTenant > tenantCapCents || wouldRoute > routeCapCents) {
-    return { ok: false, reason: "budget_exceeded", budgetBeforeUsd: tenantBeforeCents / 100 } as const;
+  if (wouldTenant > tenantCapMicros || wouldRoute > routeCapMicros) {
+    return {
+      ok: false,
+      reason: "budget_exceeded",
+      tenantBudgetBeforeUsd: tenantBeforeMicros / 1_000_000,
+      routeBudgetBeforeUsd: routeBeforeMicros / 1_000_000,
+    } as const;
   }
 
-  setTenantCents(tenant, wouldTenant);
-  setRouteCents(route, wouldRoute);
-  return { ok: true, budgetBeforeUsd: tenantBeforeCents / 100 } as const;
+  setTenantMicros(tenant, wouldTenant);
+  setRouteMicros(route, wouldRoute);
+  return {
+    ok: true,
+    tenantBudgetBeforeUsd: tenantBeforeMicros / 1_000_000,
+    routeBudgetBeforeUsd: routeBeforeMicros / 1_000_000,
+  } as const;
 }
 
 export function finalize(tenant: string, route: string, estCostUsd: number, finalCostUsd: number): void {
-  const deltaCents = Math.round((finalCostUsd - estCostUsd) * 100);
-  if (deltaCents === 0) return;
-  setTenantCents(tenant, getTenantCents(tenant) + deltaCents);
-  setRouteCents(route, getRouteCents(route) + deltaCents);
+  const deltaMicros = Math.round((finalCostUsd - estCostUsd) * 1_000_000);
+  if (deltaMicros === 0) return;
+  setTenantMicros(tenant, getTenantMicros(tenant) + deltaMicros);
+  setRouteMicros(route, getRouteMicros(route) + deltaMicros);
 }
 
 export function rebuildFromRows(rows: readonly TelemetryEvent[]): void {
-  tenantSpentCents.clear();
-  routeSpentCents.clear();
+  tenantSpentMicros.clear();
+  routeSpentMicros.clear();
   for (const r of rows) {
     const usd = typeof r.final_cost_usd === "number" ? r.final_cost_usd : r.est_cost_usd;
-    const cents = Math.round(usd * 100);
-    setTenantCents(r.tenant, getTenantCents(r.tenant) + cents);
-    setRouteCents(r.route, getRouteCents(r.route) + cents);
+    const micros = Math.round(usd * 1_000_000);
+    setTenantMicros(r.tenant, getTenantMicros(r.tenant) + micros);
+    setRouteMicros(r.route, getRouteMicros(r.route) + micros);
   }
 }

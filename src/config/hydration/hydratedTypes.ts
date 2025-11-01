@@ -22,7 +22,8 @@ export interface HydratedRoute {
   readonly provider: {
     readonly type: ProviderType;
     readonly model: string;
-    readonly provider_key: string; // resolved from provider_key_ref
+    readonly provider_key?: string; // resolved from provider_key_ref (non-local)
+    readonly endpoint?: string; // for local providers
   };
   readonly policy: {
     readonly max_tokens_in: number;

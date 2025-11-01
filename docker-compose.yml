@@ -1,0 +1,21 @@
+volumes:
+  parapet-data:
+    driver: local
+
+services:
+  runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile.runtime
+    image: parapet-runtime:dev
+    container_name: parapet-runtime
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+    volumes:
+      - parapet-data:/data
+    restart: unless-stopped
+

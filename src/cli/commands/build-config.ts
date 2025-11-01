@@ -51,7 +51,11 @@ export async function runBuildConfig(args: readonly string[]): Promise<void> {
   const blob = encryptHydratedConfigToBlob(hydrated, masterKey);
   const checksum = computeConfigChecksum(hydrated);
 
-  const lines = [`PARAPET_MASTER_KEY=${masterKey}`, `PARAPET_BOOTSTRAP_STATE=${blob}`];
+  let lines = [`PARAPET_MASTER_KEY=${masterKey}`, `PARAPET_BOOTSTRAP_STATE=${blob}`];
+  for (const service of hydrated.services) {
+    lines.push(`PARAPET_SERVICE_TOKEN_${service.label.replace(/-/g, "_").toUpperCase()}=${service.parapet_token}`);
+  }
+
   // prettier-ignore
   console.error(`Hydrated config checksum: ${checksum}`);
 

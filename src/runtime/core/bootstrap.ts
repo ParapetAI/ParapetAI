@@ -30,10 +30,12 @@ export async function bootstrapRuntime(): Promise<void> {
   const checksum = computeConfigChecksum(hydrated);
   log(LogLevel.info, `Config checksum: ${checksum}`);
 
-  // Initialize vault with provider keys per route
+  // Initialize vault with provider keys per route (for providers that use keys)
   const vault = new InMemoryVault();
   for (const route of hydrated.routes) {
-    vault.set(`route:${route.name}:provider_key`, route.provider.provider_key);
+    if (route.provider.provider_key) {
+      vault.set(`route:${route.name}:provider_key`, route.provider.provider_key);
+    }
   }
 
   // Build indices and service key map
