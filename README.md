@@ -152,8 +152,7 @@ Clients send `POST /:routeName` with:
 ### Response Formats
 - **Blocked** (4xx): `{ statusCode: 400, error: "<reason>" }`
   - Reasons: `unauthorized`, `not_allowed`, `budget_exceeded`, `drift_violation`, `redaction_blocked`, `max_tokens_in_exceeded`, `max_tokens_out_exceeded`
-- **Allowed** (200): `{ statusCode: 200, data: { output: <string|number[][]>, decision: {...} } }`
-  - `decision` includes: `allowed`, `routeMeta`, `budgetBeforeUsd`, `estCostUsd`, `finalCostUsd`, `tokensIn`, `tokensOut`, `latencyMs`, drift detection results
+- **Allowed** (200): 3rd party API response is passed through directly 
 - **Streaming** (200): `Content-Type: text/event-stream` when `stream: true` in request
   - Streams provider chunks, finalizes cost at end, logs telemetry
 
@@ -492,7 +491,7 @@ interface LlmCallResult {
 3. Add to registry in `providerRouter.ts`
 4. Add cost tables to `config/constants.ts` (if not zero-cost)
 5. Update `config/spec/types.ts` to include provider type in schema
-```
+
 ## Build System
 
 ### Workspace Scripts
@@ -565,14 +564,8 @@ Each workspace has its own `package.json` with isolated dependencies:
 - `secrets` (object) - Ref → value mappings (e.g., `my_ref: ENV:VAR_NAME` or `my_ref: PROMPT:description`)
 
 ### Secret References
-- Format: `<key>_ref: <source>:<value>`
-- Sources:
-  - `ENV:<var_name>` - Read from environment variable
-  - `PROMPT:<description>` - Interactive prompt during `build-config`
-- Examples:
-  - `openai_api_key_ref: ENV:OPENAI_API_KEY`
-  - `alice_pass_ref: PROMPT:Enter password for alice`
-- All `*_ref` fields resolved during config hydration (CLI or runtime boot)
+- Format: `<key>_ref: <value>`
+- All `*_ref` fields resolved during config hydration (in CLI)
 
 ### Route Policy Fields
 - `max_tokens_in` - Maximum prompt tokens allowed
