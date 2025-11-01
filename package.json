@@ -3,15 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "exports": {
     "./runtime/*": "./dist/runtime/*.js",
     "./config/*": "./dist/config/*.js",
     "./providers/*": "./dist/providers/*.js"
   },
   "scripts": {
-    "build": "tsc",
-    "start:runtime": "tsx src/runtime/core/index.ts",
-    "parapet": "tsx src/cli/main.ts",
+    "build": "npm run -ws build",
+    "start:runtime": "tsx apps/runtime/src/runtime/index.ts",
+    "parapet": "npm --workspace @parapetai/runtime run cli --",
+    "build:console": "cd console-ui; npm run build",
+    "build:all": "npm run -ws build",
+    "dev": "npm run -ws dev",
+    "build:console:ws": "npm --workspace @parapetai/console run build",
+    "build:runtime:ws": "npm --workspace @parapetai/runtime run build",
     "compose:up": "docker compose up -d --build",
     "compose:down": "docker compose down",
     "compose:logs": "docker compose logs -f",

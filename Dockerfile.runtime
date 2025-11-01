@@ -8,10 +8,18 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy source and tsconfig, then build
+# Copy runtime app sources and tsconfig, then build into apps/runtime/dist
 COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
+COPY apps/runtime/tsconfig.json ./apps/runtime/
+COPY apps/runtime/src ./apps/runtime/src
+COPY apps/runtime/package*.json ./apps/runtime/
+RUN npm --workspace @parapetai/runtime run build
+
+# Build console app assets into /app/apps/console/dist
+COPY apps/console/package*.json ./apps/console/
+RUN npm ci --prefix apps/console
+COPY apps/console ./apps/console
+RUN npm run build --prefix apps/console
 
 # Runtime stage: copy only what's needed for runtime execution
 FROM node:22-bookworm-slim AS runtime
@@ -28,9 +36,12 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Copy runtime dist artifacts only (no CLI)
-COPY --from=builder /app/dist/runtime ./dist/runtime
-COPY --from=builder /app/dist/config ./dist/config
-COPY --from=builder /app/dist/providers ./dist/providers
+COPY --from=builder /app/apps/runtime/dist/runtime ./dist/runtime
+COPY --from=builder /app/apps/runtime/dist/config ./dist/config
+COPY --from=builder /app/apps/runtime/dist/providers ./dist/providers
+
+# Static console assets (built in builder stage)
+COPY --from=builder /app/apps/console/dist/ /app/console-static/
 
 ENV NODE_ENV=production
 RUN mkdir -p /data && chown -R node:node /data

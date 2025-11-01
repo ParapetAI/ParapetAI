@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@parapetai/parapet/runtime/*": ["src/runtime/*"],
+      "@parapetai/parapet/config/*": ["src/config/*"],
+      "@parapetai/parapet/providers/*": ["src/providers/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
+
+

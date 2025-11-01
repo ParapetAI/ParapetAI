@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import type { ParapetSpec } from "@parapetai/parapet/config/spec/types";
 import { loadParapetSpecFromFile } from "@parapetai/parapet/config/io/parseYaml";
 import { validateSpec } from "@parapetai/parapet/config/spec/validate";
@@ -36,7 +37,11 @@ function parseArgs(args: readonly string[]): BuildArgs {
 
 export async function runBuildConfig(args: readonly string[]): Promise<void> {
   const { configPath, outPath, prompt } = parseArgs(args);
-  const spec: ParapetSpec = await loadParapetSpecFromFile(configPath);
+  const baseCwd = process.env.INIT_CWD ?? process.cwd();
+  const resolvedConfigPath = path.isAbsolute(configPath) ? configPath : path.resolve(baseCwd, configPath);
+  const resolvedOutPath = outPath ? (path.isAbsolute(outPath) ? outPath : path.resolve(baseCwd, outPath)) : undefined;
+
+  const spec: ParapetSpec = await loadParapetSpecFromFile(resolvedConfigPath);
   const result = validateSpec(spec);
   if (!result.ok) {
     // prettier-ignore
@@ -59,8 +64,8 @@ export async function runBuildConfig(args: readonly string[]): Promise<void> {
   // prettier-ignore
   console.error(`Hydrated config checksum: ${checksum}`);
 
-  if (outPath) {
-    await fs.writeFile(outPath, lines.join("\n"), { encoding: "utf8" });
+  if (resolvedOutPath) {
+    await fs.writeFile(resolvedOutPath, lines.join("\n"), { encoding: "utf8" });
   } else {
     console.log(lines.join("\n=================================\n"));
   }

@@ -8,5 +8,5 @@ yarn-error.log*
 .env*
 coverage/
 *.tsbuildinfo
-
+console-dist/
 .env

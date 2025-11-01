@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import Database from "better-sqlite3";
+import { hkdfSync } from "node:crypto";
 import { log, LogLevel } from "@parapetai/parapet/runtime/util/log";
 import { open as openStore, type TelemetryStore } from "@parapetai/parapet/runtime/telemetry/store";
 import { replayTelemetryIntoBudget } from "@parapetai/parapet/runtime/telemetry/replay";
@@ -8,6 +10,8 @@ import { computeConfigChecksum } from "@parapetai/parapet/config/crypto/checksum
 import type { HydratedConfig } from "@parapetai/parapet/config/hydration/hydratedTypes";
 import { InMemoryVault } from "@parapetai/parapet/runtime/vault";
 import { initRuntimeContext, indexRoutes, indexServices, indexTenants } from "@parapetai/parapet/runtime/core/state";
+import { initAdminUsers } from "@parapetai/parapet/runtime/security/session";
+import { runMigrations } from "@parapetai/parapet/runtime/telemetry/migrate";
 
 let store: TelemetryStore | undefined;
 
@@ -52,6 +56,28 @@ export async function bootstrapRuntime(): Promise<void> {
     tenantByName,
     serviceKeyToContext,
   });
+
+  // Initialize admin users (hash passwords in memory)
+  initAdminUsers(hydrated.users);
+
+  // Run DB migrations before opening the telemetry store
+  try {
+    const master = Buffer.from(masterKey, "utf8");
+    const telemetryKey = hkdfSync(
+      "sha256",
+      master,
+      Buffer.from("parapet/v1"),
+      Buffer.from("parapet/telemetry/v1"),
+      32
+    );
+
+    const db = new Database("/data/parapet-telemetry.db", { fileMustExist: false, readonly: false });
+    runMigrations(db, { telemetryKey: Buffer.from(telemetryKey) });
+    db.close();
+  } catch (err) {
+    log(LogLevel.error, "Failed to run telemetry DB migrations; refusing to start");
+    throw err instanceof Error ? err : new Error(String(err));
+  }
 
   store = openStore("/data/parapet-telemetry.db");
   await replayTelemetryIntoBudget(store);
