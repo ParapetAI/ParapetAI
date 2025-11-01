@@ -12,6 +12,7 @@
     "build": "tsc",
     "start:runtime": "tsx src/runtime/core/index.ts",
     "parapet": "tsx src/cli/main.ts",
+    "build:console": "cd console-ui && npm run build",
     "compose:up": "docker compose up -d --build",
     "compose:down": "docker compose down",
     "compose:logs": "docker compose logs -f",
