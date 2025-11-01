@@ -26,7 +26,11 @@ function initSchema(db: SqliteDb): void {
       "  tokens_in INTEGER,",
       "  tokens_out INTEGER,",
       "  latency_ms INTEGER,",
-      "  checksum_config TEXT NOT NULL",
+      "  checksum_config TEXT NOT NULL,",
+      "  drift_detected INTEGER,",
+      "  drift_reason TEXT,",
+      "  response_model TEXT,",
+      "  system_fingerprint TEXT",
       ")",
       ";",
       "CREATE INDEX IF NOT EXISTS idx_ts ON telemetry_events (ts);",
@@ -52,11 +56,13 @@ export function open(dbPath: string = "/data/parapet-telemetry.db"): TelemetrySt
       "INSERT INTO telemetry_events (",
       "  ts, tenant, route, service_label, allowed, block_reason,",
       "  redaction_applied, drift_strict, budget_before_usd, est_cost_usd, final_cost_usd,",
-      "  tokens_in, tokens_out, latency_ms, checksum_config",
+      "  tokens_in, tokens_out, latency_ms, checksum_config,",
+      "  drift_detected, drift_reason, response_model, system_fingerprint",
       ") VALUES (",
       "  @ts, @tenant, @route, @service_label, @allowed, @block_reason,",
       "  @redaction_applied, @drift_strict, @budget_before_usd, @est_cost_usd, @final_cost_usd,",
-      "  @tokens_in, @tokens_out, @latency_ms, @checksum_config",
+      "  @tokens_in, @tokens_out, @latency_ms, @checksum_config,",
+      "  @drift_detected, @drift_reason, @response_model, @system_fingerprint",
       ")",
     ].join("\n")
   );
@@ -79,6 +85,10 @@ export function open(dbPath: string = "/data/parapet-telemetry.db"): TelemetrySt
         tokens_out: e.tokens_out ?? null,
         latency_ms: e.latency_ms ?? null,
         checksum_config: e.checksum_config,
+        drift_detected: e.drift_detected !== undefined ? (e.drift_detected ? 1 : 0) : null,
+        drift_reason: e.drift_reason ?? null,
+        response_model: e.response_model ?? null,
+        system_fingerprint: e.system_fingerprint ?? null,
       });
     }
   });
@@ -92,7 +102,7 @@ export function open(dbPath: string = "/data/parapet-telemetry.db"): TelemetrySt
     const start = getUtcStartOfDay();
     const rows = db
       .prepare(
-        "SELECT ts, tenant, route, service_label, allowed, block_reason, redaction_applied, drift_strict, budget_before_usd, est_cost_usd, final_cost_usd, tokens_in, tokens_out, latency_ms, checksum_config FROM telemetry_events WHERE ts >= ? ORDER BY ts ASC"
+        "SELECT ts, tenant, route, service_label, allowed, block_reason, redaction_applied, drift_strict, budget_before_usd, est_cost_usd, final_cost_usd, tokens_in, tokens_out, latency_ms, checksum_config, drift_detected, drift_reason, response_model, system_fingerprint FROM telemetry_events WHERE ts >= ? ORDER BY ts ASC"
       )
       .all(start) as Array<{
       ts: number;
@@ -110,6 +120,10 @@ export function open(dbPath: string = "/data/parapet-telemetry.db"): TelemetrySt
       tokens_out: number | null;
       latency_ms: number | null;
       checksum_config: string;
+      drift_detected: number | null;
+      drift_reason: string | null;
+      response_model: string | null;
+      system_fingerprint: string | null;
     }>;
 
     return rows.map((r) => ({
@@ -128,6 +142,10 @@ export function open(dbPath: string = "/data/parapet-telemetry.db"): TelemetrySt
       tokens_out: r.tokens_out ?? undefined,
       latency_ms: r.latency_ms ?? undefined,
       checksum_config: r.checksum_config,
+      drift_detected: r.drift_detected !== null ? r.drift_detected === 1 : undefined,
+      drift_reason: r.drift_reason ?? undefined,
+      response_model: r.response_model ?? undefined,
+      system_fingerprint: r.system_fingerprint ?? undefined,
     }));
   }
 

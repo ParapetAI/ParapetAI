@@ -14,6 +14,10 @@ export interface TelemetryEvent {
   readonly tokens_out?: number;
   readonly latency_ms?: number;
   readonly checksum_config: string;
+  readonly drift_detected?: boolean;
+  readonly drift_reason?: string;
+  readonly response_model?: string;
+  readonly system_fingerprint?: string;
 }
 
 export class TelemetryBuffer {

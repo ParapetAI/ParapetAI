@@ -14,7 +14,8 @@ export type PolicyDecision =
   | { allowed: false; reason: string; blockMeta?: unknown }
   | {
       allowed: true;
-      sanitizedPrompt: string;
+      sanitizedMessages?: Array<{ role: string; content: string }>;
+      sanitizedInput?: string | string[];
       routeMeta: { tenant: string; provider: ProviderType; model: string; routeName: string };
       budgetBeforeUsd: number;
       estCostUsd: number;
@@ -28,10 +29,6 @@ export interface HealthResponse {
   readonly ok: true;
 }
 
-export interface InvokeResponse {
-  readonly output: string;
-  readonly decision: PolicyDecision;
-}
 
 export interface APIResponse<T = undefined> {
   statusCode: number;
