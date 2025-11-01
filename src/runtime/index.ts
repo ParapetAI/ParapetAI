@@ -13,5 +13,3 @@ startHttpServer(port, handleRequest)
     console.error(err instanceof Error ? err.stack ?? err.message : String(err));
     process.exitCode = 1;
   });
-
-
