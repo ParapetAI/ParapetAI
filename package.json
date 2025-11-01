@@ -1,0 +1,26 @@
+{
+  "name": "parapet",
+  "version": "0.1.0",
+  "description": "LLM perimeter with policy enforcement, spend controls, and audit trails",
+  "main": "dist/runtime/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start:runtime": "ts-node src/runtime/index.ts",
+    "parapet": "ts-node src/cli/main.ts"
+  },
+  "keywords": [
+    "llm",
+    "ai",
+    "policy",
+    "gateway",
+    "security"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
