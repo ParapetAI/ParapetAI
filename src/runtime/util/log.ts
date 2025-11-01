@@ -1,4 +1,8 @@
-export type LogLevel = "info" | "warn" | "error";
+export enum LogLevel {
+  info = "info",
+  warn = "warn",
+  error = "error",
+}
 
 export function log(level: LogLevel, message: string): void {
   // prettier-ignore

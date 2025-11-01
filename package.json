@@ -1,12 +1,20 @@
 {
-  "name": "parapet",
+  "name": "@parapetai/parapet",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./runtime/*": "./dist/runtime/*.js",
+    "./config/*": "./dist/config/*.js",
+    "./providers/*": "./dist/providers/*.js"
+  },
   "scripts": {
     "build": "tsc",
     "start:runtime": "tsx src/runtime/core/index.ts",
-    "parapet": "tsx src/cli/main.ts"
+    "parapet": "tsx src/cli/main.ts",
+    "docker-build": "docker build -f Dockerfile.runtime -t parapet-runtime:dev .",
+    "docker-run": "docker run --rm -p 8000:8000 parapet-runtime:dev",
+    "docker-stop": "docker stop parapet-runtime:dev"
   },
   "devDependencies": {
     "@types/node": "^22.18.13",
