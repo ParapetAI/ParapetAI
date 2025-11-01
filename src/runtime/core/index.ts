@@ -1,12 +1,12 @@
 import { startHttpServer } from "../http/server";
 import { handleRequest } from "../http/handlers";
-import { log } from "../util/log";
+import { log, LogLevel } from "../util/log";
 
 const port = Number(process.env.PORT ?? 3030);
 
 startHttpServer(port, handleRequest)
   .then((running) => {
-    log("info", `Runtime listening on http://localhost:${running.port}`);
+    log(LogLevel.info, `Runtime listening on http://localhost:${running.port}`);
   })
   .catch((err) => {
     // prettier-ignore
