@@ -22,19 +22,20 @@ Parapet splits into a CLI (config build) and a runtime (policy enforcement/gatew
 ### Getting started
 1) Install deps: `npm install`
 2) Build TypeScript: `npm run build`
-3) Start runtime: `npm run start:runtime`
+3) Build a config blob and start the runtime
 
-The runtime will listen on `http://localhost:3030` and respond:
+Workflow:
+- Write `parapet.yaml` (commit to git; secrets only as *_ref strings). See `parapet.yaml.example` for structure.
+- Run: `npm run parapet -- build-config --config ./parapet.yaml --out ./parapet_env.txt`
+- The CLI prints two lines and optionally writes them to `--out`:
+  - `PARAPET_MASTER_KEY=...`
+  - `PARAPET_BOOTSTRAP_STATE=...`
+- Inject those two values as env vars in your deployment.
+- Deploy the runtime container (built from `Dockerfile.runtime`) with a persistent volume mounted at `/data`.
 
-```
-Parapet runtime up
-```
-
-CLI example:
-
-```
-npm run parapet -- build-config
-```
+Notes:
+- The CLI makes no network calls and does not depend on runtime code.
+- The runtime container does NOT ship the CLI.
 
 ### Runtime data persistence (/data)
 
