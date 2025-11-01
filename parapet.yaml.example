@@ -1,0 +1,32 @@
+tenants:
+  - id: default
+    name: Default Tenant
+
+users:
+  - id: alice
+    role: admin
+  - id: bob
+    role: user
+
+services:
+  - id: openai-default
+    provider: openai
+    model: gpt-4o-mini
+    apiKey_ref: openai_api_key_ref
+  - id: anthropic-default
+    provider: anthropic
+    model: claude-3-haiku
+    apiKey_ref: anthropic_api_key_ref
+  - id: local-echo
+    provider: local
+
+routes:
+  - id: general
+    serviceId: openai-default
+    budget_ref: default_budget_ref
+
+secrets:
+  openai_api_key_ref: ENV:OPENAI_API_KEY
+  anthropic_api_key_ref: ENV:ANTHROPIC_API_KEY
+  default_budget_ref: "1000-cents/month"
+
