@@ -83,6 +83,22 @@ export function validateSpec(spec: ParapetSpec): ValidationResult {
       if (!Number.isFinite(pol.max_tokens_out) || pol.max_tokens_out < 0) issues.push({ path: `routes[${i}].policy.max_tokens_out`, message: "must be a non-negative number" });
       if (!Number.isFinite(pol.budget_daily_usd) || pol.budget_daily_usd < 0) issues.push({ path: `routes[${i}].policy.budget_daily_usd`, message: "must be a non-negative number" });
       if (typeof pol.drift_strict !== "boolean") issues.push({ path: `routes[${i}].policy.drift_strict`, message: "must be boolean" });
+      const dd = pol.drift_detection;
+      if (dd !== undefined) {
+        if (dd.enabled !== undefined && typeof dd.enabled !== "boolean") {
+          issues.push({ path: `routes[${i}].policy.drift_detection.enabled`, message: "must be boolean" });
+        }
+        if (dd.sensitivity !== undefined) {
+          if (dd.sensitivity !== "low" && dd.sensitivity !== "medium" && dd.sensitivity !== "high") {
+            issues.push({ path: `routes[${i}].policy.drift_detection.sensitivity`, message: "must be one of: low, medium, high" });
+          }
+        }
+        if (dd.cost_anomaly_threshold !== undefined) {
+          if (!Number.isFinite(dd.cost_anomaly_threshold) || dd.cost_anomaly_threshold < 0 || dd.cost_anomaly_threshold > 1) {
+            issues.push({ path: `routes[${i}].policy.drift_detection.cost_anomaly_threshold`, message: "must be a number between 0 and 1" });
+          }
+        }
+      }
       const red = pol.redaction;
       if (!red) {
         issues.push({ path: `routes[${i}].policy.redaction`, message: "redaction is required" });
