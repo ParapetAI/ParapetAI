@@ -14,7 +14,12 @@ export interface HealthResponse {
   readonly ok: true;
 }
 
-export interface APIResponse<T> {
+export interface InvokeResponse {
+  readonly output: string;
+}
+
+export interface APIResponse<T = undefined> {
   statusCode: number;
-  data: T;
+  error?: string;
+  data?: T;
 }

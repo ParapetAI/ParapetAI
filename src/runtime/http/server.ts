@@ -1,19 +1,51 @@
-import http from "node:http";
-
-export type RequestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
+import Fastify, { type FastifyInstance } from "fastify";
+import { APIResponse, type HealthResponse } from "@parapetai/parapet/runtime/core/types";
+import { registerInvokeRoutes } from "@parapetai/parapet/runtime/http/routes/index";
 
 export interface RunningServer {
-  readonly server: http.Server;
+  readonly server: any;
   readonly port: number;
   close(): Promise<void>;
 }
 
-export async function startHttpServer(port: number, handler: RequestHandler): Promise<RunningServer> {
-  const server = http.createServer(handler);
-  await new Promise<void>((resolve) => server.listen(port, resolve));
+export async function startHttpServer(port: number): Promise<RunningServer> {
+  const app: FastifyInstance = Fastify({ logger: false });
+
+  // tolerant JSON parser: treat empty body as {}, and invalid JSON as null so routes can handle
+  app.addContentTypeParser(/^application\/json(?:;.*)?$/i, { parseAs: "string" }, (_req, body, done) => {
+    const text = typeof body === "string" ? body : String(body ?? "");
+    if (text.trim() === "") return done(null, {});
+    try {
+      const parsed = JSON.parse(text);
+      return done(null, parsed);
+    } catch {
+      // fall through to route validation
+      return done(null, null as any);
+    }
+  });
+
+  app.setErrorHandler((err, _request, reply) => {
+    if ((err as any)?.code === "FST_ERR_CTP_INVALID_JSON_BODY") {
+      const response: APIResponse = { statusCode: 400, error: "invalid_json" };
+      return reply.code(response.statusCode).send(response);
+    }
+    const response: APIResponse = { statusCode: 500, error: "internal_error" };
+    return reply.code(response.statusCode).send(response);
+  });
+
+  app.get("/health", async (_request, reply) => {
+    const response: APIResponse<HealthResponse> = { statusCode: 200, data: { ok: true } };
+    return reply.code(response.statusCode).send(response);
+  });
+
+  registerInvokeRoutes(app);
+
+  await app.listen({ port, host: "0.0.0.0" });
+  const address = app.server.address();
+  const boundPort = (address && typeof address === "object" ? (address as any).port : port) as number;
   return {
-    server,
-    port: (server.address() && typeof server.address() === "object" ? (server.address() as any).port : port) as number,
-    close: () => new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve()))),
+    server: app.server,
+    port: boundPort,
+    close: () => app.close(),
   };
 }

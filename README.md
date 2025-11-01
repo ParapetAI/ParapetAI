@@ -50,3 +50,23 @@ Docker example with a persistent volume:
 docker build -f Dockerfile.runtime -t parapet-runtime:dev .
 docker run --rm -p 8000:8000 -v parapet-data:/data parapet-runtime:dev
 ```
+
+### Perimeter request flow
+
+- Caller sends `POST /:routeName` with header `X-Parapet-Service-Key: <token>` and JSON body `{ "prompt": string }`.
+- Runtime gates in order:
+  1. Auth: token → service context (tenant, allowed routes)
+  2. Route access: service must be allowed for `:routeName`
+  3. Token limits: prompt tokens ≤ `route.policy.max_tokens_in`, output cap `max_tokens_out`
+  4. Drift: if `route.policy.drift_strict`, provider+model must match hydrated config
+  5. Redaction: regex-based; mode `warn` scrubs and continues, `block` rejects, `off` no-op
+  6. Cost estimate: deterministic per provider/model
+  7. Budget: per-tenant and per-route daily caps, best-effort in-memory with telemetry replay on boot
+
+Responses:
+- Blocked: 4xx JSON `{ error: <reason> }` (e.g., unauthorized, not_allowed, budget_exceeded, drift_violation, redaction_blocked)
+- Allowed: 200 JSON `{ output: string }` (provider call is stubbed)
+
+Provider keys are never exposed to callers; they are stored in-memory and used only by the runtime when invoking the provider adapter.
+
+All calls (allowed or blocked) are recorded to telemetry and flushed to `/data`. On restart with the same `/data` volume, budget counters are rebuilt for today from telemetry.
