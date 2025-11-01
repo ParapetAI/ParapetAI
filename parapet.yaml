@@ -42,7 +42,7 @@ routes:
       drift_detection:
         sensitivity: medium  # low (25%), medium (15%), high (10%)
       redaction:
-        mode: warn
+        mode: block
         patterns: ["email", "api_key", "ip", "phone"]
 
   - name: embeddings
@@ -60,7 +60,7 @@ routes:
       drift_detection:
         sensitivity: high  # More sensitive for embeddings (10% threshold)
       redaction:
-        mode: warn
+        mode: block
         patterns: ["email", "api_key", "ip", "phone"]
 
   - name: local

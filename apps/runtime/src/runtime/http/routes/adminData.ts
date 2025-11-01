@@ -86,6 +86,14 @@ export function registerAdminData(app: FastifyInstance): void {
 
     reply.code(200).send(result);
   });
+
+  app.get("/console/data/telemetry", async (request, reply) => {
+    if (!requireSessionOr401(request, reply)) return;
+    const raw = String((request.query as any)?.limit ?? "");
+    const lim = Math.min(1000, Math.max(1, Number.parseInt(raw || "100", 10) || 100));
+    const rows = await store.loadLastRows(lim);
+    reply.code(200).send(rows);
+  });
 }
 
 

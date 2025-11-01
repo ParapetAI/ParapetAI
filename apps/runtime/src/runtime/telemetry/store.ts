@@ -4,6 +4,7 @@ import type { TelemetryEvent } from "@parapetai/parapet/runtime/telemetry/teleme
 export interface TelemetryStore {
   appendBatch(events: readonly TelemetryEvent[]): Promise<void>;
   loadTodayRows(): Promise<readonly TelemetryEvent[]>;
+  loadLastRows(limit: number): Promise<readonly TelemetryEvent[]>;
 }
 
 type SqliteDb = any;
@@ -117,6 +118,57 @@ export function open(dbPath: string = "/data/parapet-telemetry.db"): TelemetrySt
     }));
   }
 
-  return { appendBatch, loadTodayRows };
+  async function loadLastRows(limit: number): Promise<readonly TelemetryEvent[]> {
+    const lim = Math.max(1, Math.min(1000, Math.floor(limit || 1)));
+    const rows = db
+      .prepare(
+        "SELECT ts, tenant, route, service_label, allowed, block_reason, redaction_applied, drift_strict, budget_before_usd, est_cost_usd, final_cost_usd, tokens_in, tokens_out, latency_ms, checksum_config, drift_detected, drift_reason, response_model, system_fingerprint FROM telemetry_events ORDER BY ts DESC LIMIT ?"
+      )
+      .all(lim) as Array<{
+      ts: number;
+      tenant: string;
+      route: string;
+      service_label: string;
+      allowed: number;
+      block_reason: string | null;
+      redaction_applied: number;
+      drift_strict: number;
+      budget_before_usd: number;
+      est_cost_usd: number;
+      final_cost_usd: number | null;
+      tokens_in: number | null;
+      tokens_out: number | null;
+      latency_ms: number | null;
+      checksum_config: string;
+      drift_detected: number | null;
+      drift_reason: string | null;
+      response_model: string | null;
+      system_fingerprint: string | null;
+    }>;
+
+    return rows.map((r) => ({
+      ts: r.ts,
+      tenant: r.tenant,
+      route: r.route,
+      service_label: r.service_label,
+      allowed: r.allowed === 1,
+      block_reason: r.block_reason ?? undefined,
+      redaction_applied: r.redaction_applied === 1,
+      drift_strict: r.drift_strict === 1,
+      budget_before_usd: r.budget_before_usd,
+      est_cost_usd: r.est_cost_usd,
+      final_cost_usd: r.final_cost_usd ?? undefined,
+      tokens_in: r.tokens_in ?? undefined,
+      tokens_out: r.tokens_out ?? undefined,
+      latency_ms: r.latency_ms ?? undefined,
+      checksum_config: r.checksum_config,
+      drift_detected: r.drift_detected !== null ? r.drift_detected === 1 : undefined,
+      drift_reason: r.drift_reason ?? undefined,
+      response_model: r.response_model ?? undefined,
+      system_fingerprint: r.system_fingerprint ?? undefined,
+    }));
+  }
+
+  return { appendBatch, loadTodayRows, loadLastRows };
 }
 

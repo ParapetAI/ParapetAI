@@ -28,7 +28,7 @@ function htmlShell(): string {
     "  </head>",
     "  <body class=\"bg-slate-900 text-slate-100\">",
     "    <div id=\"root\"></div>",
-    "    <script src=\"/console/static/app.js\"></script>",
+    "    <script type=\"module\" src=\"/console/static/app.js\"></script>",
     "  </body>",
     "</html>",
   ].join("\n");
@@ -53,6 +53,22 @@ export function registerAdminConsole(app: FastifyInstance): void {
       const buf = fs.readFileSync(fullPath);
       const ct = file.endsWith(".css") ? "text/css" : "text/javascript";
       reply.header("Content-Type", ct).header("Cache-Control", "no-store").send(buf);
+    } catch {
+      reply.code(404).send();
+    }
+  });
+
+  app.get<{ Params: { file: string } }>("/console/static/assets/:file", async (request, reply) => {
+    if (!requireSessionOr401(request, reply)) return;
+    const file = (request.params as any).file as string;
+    if (!/^[A-Za-z0-9_.-]+\.js$/.test(file)) {
+      reply.code(404).send();
+      return;
+    }
+    const fullPath = path.join("/app/console-static/assets", file);
+    try {
+      const buf = fs.readFileSync(fullPath);
+      reply.header("Content-Type", "text/javascript").header("Cache-Control", "no-store").send(buf);
     } catch {
       reply.code(404).send();
     }

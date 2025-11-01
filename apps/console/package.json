@@ -1,9 +1,11 @@
 {
-  "name": "parapet-console-ui",
+  "name": "@parapetai/console",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@types/react": "^18.3.8",

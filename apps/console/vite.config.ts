@@ -4,15 +4,16 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outDir = resolve(here, "../console-dist");
 
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir,
+    outDir: "dist",
     emptyOutDir: true,
     sourcemap: false,
     cssCodeSplit: false,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       input: resolve(here, "index.html"),
       output: {
@@ -25,6 +26,7 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {},
 });
 
 

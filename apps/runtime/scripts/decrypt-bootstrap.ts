@@ -1,4 +1,4 @@
-import { decryptBlobToHydratedConfig } from "@parapetai/parapet/config/crypto/blobDecrypt";
+import { decryptBlobToHydratedConfig } from "../src/config/crypto/blobDecrypt";
 import path from "path";
 import fs from "fs";
 

@@ -22,6 +22,18 @@ interface ChecksumResponse {
   readonly checksum: string;
 }
 
+interface TelemetryEventRow {
+  readonly ts: number;
+  readonly tenant: string;
+  readonly route: string;
+  readonly service_label: string;
+  readonly allowed: boolean;
+  readonly block_reason?: string;
+  readonly est_cost_usd: number;
+  readonly final_cost_usd?: number;
+  readonly latency_ms?: number;
+}
+
 function httpRedirectToLogin(): void {
   // Avoid leaking any response content; just bounce to login
   (window as any).location = "/console/login";
@@ -178,10 +190,75 @@ function ChecksumCard(props: { checksum?: string }): JSX.Element {
   );
 }
 
+function TelemetryCard(props: {
+  rows: readonly TelemetryEventRow[];
+  limit: number;
+  setLimit: (n: number) => void;
+}): JSX.Element {
+  const limits = [25, 50, 100, 200, 500, 1000];
+  return (
+    <Card title="Recent Telemetry" subtitle="Newest first">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-slate-300 text-xs">View last N events</div>
+        <select
+          value={props.limit}
+          onChange={(e) => props.setLimit(Number(e.target.value))}
+          className="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded px-2 py-1"
+        >
+          {limits.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+      {props.rows.length === 0 ? (
+        <div className="text-slate-400 text-sm">No telemetry yet.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm table-auto">
+            <thead>
+              <tr className="text-left text-slate-300">
+                <th className="py-2 pr-4 font-medium">Time</th>
+                <th className="py-2 pr-4 font-medium">Tenant</th>
+                <th className="py-2 pr-4 font-medium">Route</th>
+                <th className="py-2 pr-4 font-medium">Service</th>
+                <th className="py-2 pr-4 font-medium">Outcome</th>
+                <th className="py-2 pr-4 font-medium">Cost (USD)</th>
+                <th className="py-2 pr-0 font-medium">Latency (ms)</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-200 divide-y divide-slate-800">
+              {props.rows.map((e, idx) => {
+                const outcome = e.allowed ? "allowed" : e.block_reason ?? "blocked";
+                const cost = (e.final_cost_usd ?? e.est_cost_usd).toFixed(4);
+                const when = new Date(e.ts).toLocaleString();
+                return (
+                  <tr key={`${e.ts}:${idx}`}>
+                    <td className="py-2 pr-4 whitespace-nowrap">{when}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">{e.tenant}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">{e.route}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">{e.service_label}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">{outcome}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">${cost}</td>
+                    <td className="py-2 pr-0 whitespace-nowrap">{e.latency_ms ?? ""}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function App(): JSX.Element {
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [blocked, setBlocked] = useState<BlockedSummary | undefined>(undefined);
   const [checksum, setChecksum] = useState<string | undefined>(undefined);
+  const [telemetry, setTelemetry] = useState<TelemetryEventRow[]>([]);
+  const [telemetryLimit, setTelemetryLimit] = useState<number>(100);
   const [error, setError] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -211,6 +288,23 @@ export default function App(): JSX.Element {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await fetchJson<TelemetryEventRow[]>(`/console/data/telemetry?limit=${telemetryLimit}`);
+        if (cancelled) return;
+        setTelemetry(rows);
+      } catch (e: any) {
+        if (cancelled) return;
+        // leave global error alone; only affect telemetry area silently
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [telemetryLimit]);
+
   return (
     <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100">
       <Header checksum={checksum} />
@@ -235,6 +329,7 @@ export default function App(): JSX.Element {
               <BlockedCard summary={blocked} />
               <ChecksumCard checksum={checksum} />
             </div>
+            <TelemetryCard rows={telemetry} limit={telemetryLimit} setLimit={setTelemetryLimit} />
           </>
         )}
       </div>
