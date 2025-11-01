@@ -54,10 +54,11 @@ export async function runBuildConfig(args: readonly string[]): Promise<void> {
   const lines = [`PARAPET_MASTER_KEY=${masterKey}`, `PARAPET_BOOTSTRAP_STATE=${blob}`];
   // prettier-ignore
   console.error(`Hydrated config checksum: ${checksum}`);
-  // prettier-ignore
-  console.log(lines.join("\n\n=================================\n\n"));
+
   if (outPath) {
-    await fs.writeFile(outPath, lines.join("\n\n=================================\n\n"), { encoding: "utf8" });
+    await fs.writeFile(outPath, lines.join("\n"), { encoding: "utf8" });
+  } else {
+    console.log(lines.join("\n=================================\n"));
   }
 }
 
