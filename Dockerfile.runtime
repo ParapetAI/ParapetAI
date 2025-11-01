@@ -29,6 +29,6 @@ COPY --from=builder /app/dist/providers ./dist/providers
 ENV NODE_ENV=production
 EXPOSE 8000
 
-CMD ["node","dist/runtime/index.js"]
+CMD ["node", "dist/runtime/index.js"]
 
 
