@@ -1,8 +1,13 @@
+import { getRuntimeContext } from "@parapetai/parapet/runtime/core/state";
+
 export interface CallerContext {
-  readonly subject: string;
-  readonly roles: readonly string[];
+  readonly serviceLabel: string;
+  readonly tenant: string;
+  readonly allowedRoutes: readonly string[];
 }
 
-export function authenticateToken(_token: string): CallerContext | null {
-  return { subject: "anon", roles: [] } as const;
+export function getCallerContext(token: string): CallerContext | null {
+  const ctx = getRuntimeContext();
+  const found = ctx.serviceKeyToContext.get(token);
+  return found ? { ...found } : null;
 }
