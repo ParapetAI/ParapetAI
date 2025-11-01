@@ -21,7 +21,8 @@ export async function callRouteProvider(
   if (!adapter) throw new Error(`No adapter for provider: ${route.provider.type}`);
   const runtime = getRuntimeContext();
   const apiKey = runtime.vault.get(`route:${route.name}:provider_key`) ?? "";
-  const result = await adapter.callLLM({ prompt, model: route.provider.model, apiKey, maxTokensOut });
+  const endpoint = route.provider.endpoint;
+  const result = await adapter.callLLM({ prompt, model: route.provider.model, apiKey, maxTokensOut, endpoint });
   const finalCostUsd = estimateCost(route.provider.type, route.provider.model, result.tokensIn, result.tokensOut);
   return { ...result, finalCostUsd } as const;
 }

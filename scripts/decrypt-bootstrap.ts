@@ -1,8 +1,22 @@
 import { decryptBlobToHydratedConfig } from "@parapetai/parapet/config/crypto/blobDecrypt";
+import path from "path";
+import fs from "fs";
 
 function main() {
-    const masterKey = '{masterKeyHere}';
-    const blob = '{blobHere}';
+    const envPath = path.resolve(".env");
+    fs
+      .readFileSync(envPath, "utf8")
+      .split(/\r?\n/)
+      .filter(line => line.trim() && !line.trim().startsWith("#"))
+      .forEach(line => {
+        const [key, ...rest] = line.split("=");
+        if (key && !(key in process.env)) {
+          process.env[key.trim()] = rest.join("=").trim();
+        }
+      });
+
+    const masterKey = process.env.PARAPET_MASTER_KEY;
+    const blob = process.env.PARAPET_BOOTSTRAP_STATE;
   
     if (!masterKey || !blob) {
       console.error("Missing PARAPET_MASTER_KEY or PARAPET_BOOTSTRAP_STATE in env");

@@ -22,7 +22,8 @@ export interface RouteSpec {
   readonly provider: {
     readonly type: ProviderType;
     readonly model: string;
-    readonly provider_key_ref: string;
+    readonly provider_key_ref?: string; // required for non-local providers
+    readonly endpoint?: string; // required for local provider
   };
   readonly policy: {
     readonly max_tokens_in: number;

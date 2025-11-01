@@ -18,8 +18,9 @@ function getPrice(provider: ProviderType, _model: string): Price {
     case "anthropic":
       return { inPerTokUsd: 0.000006, outPerTokUsd: 0.000013 };
     case "local":
-    default:
-      return { inPerTokUsd: 0.0, outPerTokUsd: 0.0 };
+      return { inPerTokUsd: 0, outPerTokUsd: 0 }; // local provider is free
+    default: 
+      return { inPerTokUsd: 0.000005, outPerTokUsd: 0.000015 };
   }
 }
 

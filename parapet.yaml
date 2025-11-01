@@ -1,0 +1,58 @@
+version: 1
+
+tenants:
+  - name: default
+    spend:
+      daily_usd_cap: 5.0
+
+users:
+  - username: alice
+    role: admin
+    password_ref: alice_pass_ref
+
+services:
+  - label: openai-app
+    tenant: default
+    allowed_routes:
+      - openai
+    parapet_token_ref: openai_app_token_ref
+  - label: local-app
+    tenant: default
+    allowed_routes:
+      - local
+    parapet_token_ref: local_app_token_ref
+
+routes:
+  - name: openai
+    tenant: default
+    provider:
+      type: openai
+      model: gpt-4o-mini
+      provider_key_ref: openai_api_key_ref
+    policy:
+      max_tokens_in: 4000
+      max_tokens_out: 4000
+      budget_daily_usd: 2.0
+      drift_strict: true
+      redaction:
+        mode: warn
+        patterns: ["email", "api_key", "ip", "phone"]
+
+  - name: local
+    tenant: default
+    provider:
+      type: local
+      model: llama3
+      endpoint: http://localhost:11434/v1/chat/completions
+    policy:
+      max_tokens_in: 4000
+      max_tokens_out: 4000
+      budget_daily_usd: 2.0
+      drift_strict: true
+      redaction:
+        mode: warn
+        patterns: ["email", "api_key", "ip", "phone"]
+
+secrets:
+  app_token_ref: ENV:PARAPET_APP_TOKEN
+  alice_pass_ref: ENV:PARAPET_ADMIN_ALICE_PASSWORD

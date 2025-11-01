@@ -48,19 +48,34 @@ export async function resolveRefs(spec: ParapetSpec, opts: ResolveRefsOptions = 
 
   const routes: HydratedRoute[] = [];
   for (const r of spec.routes) {
-    const key = await resolveRef(r.provider.provider_key_ref, `provider_key for route ${r.name}`);
-    routes.push({
-      name: r.name,
-      tenant: r.tenant,
-      provider: { type: r.provider.type, model: r.provider.model, provider_key: key },
-      policy: {
-        max_tokens_in: r.policy.max_tokens_in,
-        max_tokens_out: r.policy.max_tokens_out,
-        budget_daily_usd: r.policy.budget_daily_usd,
-        drift_strict: r.policy.drift_strict,
-        redaction: { mode: r.policy.redaction.mode, patterns: r.policy.redaction.patterns },
-      },
-    });
+    if (r.provider.type === "local") {
+      routes.push({
+        name: r.name,
+        tenant: r.tenant,
+        provider: { type: r.provider.type, model: r.provider.model, endpoint: r.provider.endpoint },
+        policy: {
+          max_tokens_in: r.policy.max_tokens_in,
+          max_tokens_out: r.policy.max_tokens_out,
+          budget_daily_usd: r.policy.budget_daily_usd,
+          drift_strict: r.policy.drift_strict,
+          redaction: { mode: r.policy.redaction.mode, patterns: r.policy.redaction.patterns },
+        },
+      });
+    } else {
+      const key = await resolveRef(r.provider.provider_key_ref as string, `provider_key for route ${r.name}`);
+      routes.push({
+        name: r.name,
+        tenant: r.tenant,
+        provider: { type: r.provider.type, model: r.provider.model, provider_key: key },
+        policy: {
+          max_tokens_in: r.policy.max_tokens_in,
+          max_tokens_out: r.policy.max_tokens_out,
+          budget_daily_usd: r.policy.budget_daily_usd,
+          drift_strict: r.policy.drift_strict,
+          redaction: { mode: r.policy.redaction.mode, patterns: r.policy.redaction.patterns },
+        },
+      });
+    }
   }
 
   const services: HydratedService[] = [];

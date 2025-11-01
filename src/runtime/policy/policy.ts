@@ -4,19 +4,7 @@ import { checkDriftStrict } from "@parapetai/parapet/runtime/security/drift";
 import { redact } from "@parapetai/parapet/runtime/security/redaction";
 import { estimateTokens, estimateCost } from "@parapetai/parapet/runtime/util/cost";
 import { checkAndReserve } from "@parapetai/parapet/runtime/policy/budget";
-import type { ProviderType } from "@parapetai/parapet/config/spec/types";
-
-export type PolicyDecision =
-  | { allowed: false; reason: string; blockMeta?: unknown }
-  | {
-      allowed: true;
-      sanitizedPrompt: string;
-      routeMeta: { tenant: string; provider: ProviderType; model: string; routeName: string };
-      budgetBeforeUsd: number;
-      estCostUsd: number;
-      redactionApplied: boolean;
-      driftStrict: boolean;
-    };
+import type { PolicyDecision } from "@parapetai/parapet/runtime/core/types";
 
 export async function evaluatePolicy(serviceKey: string, routeName: string, prompt: string): Promise<PolicyDecision> {
   const runtime = getRuntimeContext();
@@ -34,6 +22,7 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, prom
   const tokensIn = estimateTokens(prompt);
   if (tokensIn > route.policy.max_tokens_in) return { allowed: false, reason: "max_tokens_in_exceeded" } as const;
   const maxTokensOut = route.policy.max_tokens_out;
+  const tokensOutGuess = Math.min(maxTokensOut, Math.max(1, Math.floor(tokensIn * 0.25)));
 
   const drift = checkDriftStrict(route, { provider: route.provider.type, model: route.provider.model });
   if (!drift.ok) return { allowed: false, reason: drift.reason } as const;
@@ -48,15 +37,20 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, prom
   const tenant = runtime.tenantByName.get(route.tenant);
   if (!tenant) return { allowed: false, reason: "unknown_tenant" } as const;
 
-  const estCostUsd = estimateCost(route.provider.type, route.provider.model, tokensIn, maxTokensOut);
+  const estCostUsd = estimateCost(route.provider.type, route.provider.model, tokensIn, tokensOutGuess);
   const budget = checkAndReserve(tenant.name, route.name, estCostUsd, route.policy.budget_daily_usd, tenant.spend.daily_usd_cap);
-  if (!budget.ok) return { allowed: false, reason: budget.reason, blockMeta: { budgetBeforeUsd: budget.budgetBeforeUsd } } as const;
+  if (!budget.ok)
+    return {
+      allowed: false,
+      reason: budget.reason,
+      blockMeta: { tenantBudgetBeforeUsd: budget.tenantBudgetBeforeUsd, routeBudgetBeforeUsd: budget.routeBudgetBeforeUsd },
+    } as const;
 
   return {
     allowed: true,
     sanitizedPrompt,
     routeMeta: { tenant: tenant.name, provider: route.provider.type, model: route.provider.model, routeName },
-    budgetBeforeUsd: budget.budgetBeforeUsd,
+    budgetBeforeUsd: budget.tenantBudgetBeforeUsd,
     estCostUsd,
     redactionApplied,
     driftStrict: route.policy.drift_strict,

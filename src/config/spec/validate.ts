@@ -66,8 +66,14 @@ export function validateSpec(spec: ParapetSpec): ValidationResult {
     if (!p?.model || p.model.trim().length === 0) {
       issues.push({ path: `routes[${i}].provider.model`, message: "provider.model is required" });
     }
-    if (!p?.provider_key_ref || p.provider_key_ref.trim().length === 0) {
-      issues.push({ path: `routes[${i}].provider.provider_key_ref`, message: "provider_key_ref is required" });
+    if (p?.type === "local") {
+      if (!p?.endpoint || p.endpoint.trim().length === 0) {
+        issues.push({ path: `routes[${i}].provider.endpoint`, message: "endpoint is required for local provider" });
+      }
+    } else {
+      if (!p?.provider_key_ref || p.provider_key_ref.trim().length === 0) {
+        issues.push({ path: `routes[${i}].provider.provider_key_ref`, message: "provider_key_ref is required for non-local providers" });
+      }
     }
     const pol = r?.policy;
     if (!pol) {
@@ -114,9 +120,6 @@ export function validateSpec(spec: ParapetSpec): ValidationResult {
           issues.push({ path: `services[${i}].allowed_routes[${j}]`, message: "must reference an existing route name" });
         }
       }
-    }
-    if (!s?.parapet_token_ref || s.parapet_token_ref.trim().length === 0) {
-      issues.push({ path: `services[${i}].parapet_token_ref`, message: "parapet_token_ref is required" });
     }
   }
 

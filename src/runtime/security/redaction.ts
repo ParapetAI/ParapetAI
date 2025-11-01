@@ -8,6 +8,8 @@ const regexByRule: Record<RedactionRuleName, RegExp> = {
   email: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
   api_key: /(?:api|key|secret)[_\-]?(?:id|key)?[:=\s]*[A-Za-z0-9_\-]{16,}/gi,
   ip: /\b(?:(?:2(5[0-5]|[0-4]\d))|1?\d?\d)(?:\.(?:(?:2(5[0-5]|[0-4]\d))|1?\d?\d)){3}\b/g,
+  phone:
+    /(?<!\d)(?:\+?\d{1,3}[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]*\d{3}[-.\s]*\d{4}(?!\d)/g,
 };
 
 interface CompiledPattern {
@@ -81,7 +83,16 @@ export function redact(
   // warn → scrub secrets
   let output = input;
   for (const r of compiled) {
-    const replacement = r.tag === "email" ? "[REDACTED_EMAIL]" : r.tag === "api_key" ? "[REDACTED_API_KEY]" : r.tag === "ip" ? "[REDACTED_IP]" : "[REDACTED]";
+    const replacement =
+      r.tag === "email"
+        ? "[REDACTED_EMAIL]"
+        : r.tag === "api_key"
+        ? "[REDACTED_API_KEY]"
+        : r.tag === "ip"
+        ? "[REDACTED_IP]"
+        : r.tag === "phone"
+        ? "[REDACTED_PHONE]"
+        : "[REDACTED]";
     output = output.replace(r.regex, replacement);
   }
   return { output, applied: true } as const;

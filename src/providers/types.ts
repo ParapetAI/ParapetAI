@@ -5,6 +5,7 @@ export interface LlmCallInput {
   readonly model: string;
   readonly apiKey: string;
   readonly maxTokensOut: number;
+  readonly endpoint?: string;
 }
 
 export interface LlmCallOutput {

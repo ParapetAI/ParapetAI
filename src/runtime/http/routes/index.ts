@@ -93,7 +93,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
 
       const response: APIResponse<InvokeResponse> = {
         statusCode: 200,
-        data: { output: providerResult.output },
+        data: { output: providerResult.output, decision },
       };
       return reply.code(response.statusCode).send(response);
     } catch {
