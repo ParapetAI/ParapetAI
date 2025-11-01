@@ -1,0 +1,22 @@
+{
+  "name": "parapet",
+  "version": "0.1.0",
+  "description": "LLM perimeter enforcement gateway",
+  "main": "dist/runtime/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start:runtime": "ts-node src/runtime/index.ts",
+    "parapet": "ts-node src/cli/main.ts"
+  },
+  "keywords": ["llm", "gateway", "security", "policy"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "fastify": "^4.25.0"
+  }
+}
