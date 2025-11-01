@@ -13,7 +13,7 @@
     "start:runtime": "tsx src/runtime/core/index.ts",
     "parapet": "tsx src/cli/main.ts",
     "docker-build": "docker build -f Dockerfile.runtime -t parapet-runtime:dev .",
-    "docker-run": "docker run --rm -p 8000:8000 parapet-runtime:dev",
+    "docker-run": "docker run --rm -p 8000:8000 --env-file .env parapet-runtime:dev",
     "docker-stop": "docker stop parapet-runtime:dev"
   },
   "devDependencies": {
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "better-sqlite3": "^12.4.1"
+    "better-sqlite3": "^12.4.1",
+    "yaml": "^2.6.0"
   }
 }

@@ -1,32 +1,39 @@
+version: 1
+
 tenants:
-  - id: default
-    name: Default Tenant
+  - name: default
+    spend:
+      daily_usd_cap: 5.0
 
 users:
-  - id: alice
+  - username: alice
     role: admin
-  - id: bob
-    role: user
+    password_ref: alice_pass_ref
 
 services:
-  - id: openai-default
-    provider: openai
-    model: gpt-4o-mini
-    apiKey_ref: openai_api_key_ref
-  - id: anthropic-default
-    provider: anthropic
-    model: claude-3-haiku
-    apiKey_ref: anthropic_api_key_ref
-  - id: local-echo
-    provider: local
+  - label: app
+    tenant: default
+    allowed_routes:
+      - general
+    parapet_token_ref: app_token_ref
 
 routes:
-  - id: general
-    serviceId: openai-default
-    budget_ref: default_budget_ref
+  - name: general
+    tenant: default
+    provider:
+      type: openai
+      model: gpt-4o-mini
+      provider_key_ref: openai_api_key_ref
+    policy:
+      max_tokens_in: 4000
+      max_tokens_out: 4000
+      budget_daily_usd: 2.0
+      drift_strict: true
+      redaction:
+        mode: off
+        patterns: []
 
 secrets:
   openai_api_key_ref: ENV:OPENAI_API_KEY
-  anthropic_api_key_ref: ENV:ANTHROPIC_API_KEY
-  default_budget_ref: "1000-cents/month"
-
+  app_token_ref: ENV:PARAPET_APP_TOKEN
+  alice_pass_ref: ENV:PARAPET_ADMIN_ALICE_PASSWORD

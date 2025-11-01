@@ -1,29 +1,50 @@
 export interface ParapetSpec {
-  readonly tenants?: readonly TenantSpec[];
-  readonly services?: readonly ServiceSpec[];
-  readonly users?: readonly UserSpec[];
-  readonly routes?: readonly RouteSpec[];
+  readonly version: number;
+  readonly tenants: readonly TenantSpec[];
+  readonly routes: readonly RouteSpec[];
+  readonly services: readonly ServiceSpec[];
+  readonly users: readonly UserSpec[];
 }
 
 export interface TenantSpec {
-  readonly id: string;
-  readonly name?: string;
+  readonly name: string;
+  readonly spend: {
+    readonly daily_usd_cap: number;
+  };
+  readonly notes?: string;
+}
+
+export type ProviderType = "openai" | "anthropic" | "local";
+
+export interface RouteSpec {
+  readonly name: string;
+  readonly tenant: string;
+  readonly provider: {
+    readonly type: ProviderType;
+    readonly model: string;
+    readonly provider_key_ref: string;
+  };
+  readonly policy: {
+    readonly max_tokens_in: number;
+    readonly max_tokens_out: number;
+    readonly budget_daily_usd: number;
+    readonly drift_strict: boolean;
+    readonly redaction: {
+      readonly mode: "warn" | "block" | "off";
+      readonly patterns: readonly string[];
+    };
+  };
 }
 
 export interface ServiceSpec {
-  readonly id: string;
-  readonly provider: string;
-  readonly model?: string;
-  readonly apiKey_ref?: string;
+  readonly label: string;
+  readonly tenant: string;
+  readonly allowed_routes: readonly string[];
+  readonly parapet_token_ref: string;
 }
 
 export interface UserSpec {
-  readonly id: string;
-  readonly role?: string;
-}
-
-export interface RouteSpec {
-  readonly id: string;
-  readonly serviceId: string;
-  readonly budget_ref?: string;
+  readonly username: string;
+  readonly role: "admin" | "viewer";
+  readonly password_ref: string;
 }
