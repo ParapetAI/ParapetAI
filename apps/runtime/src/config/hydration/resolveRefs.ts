@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type { HydratedConfig, HydratedRoute, HydratedService, HydratedTenant, HydratedUser } from "./hydratedTypes";
-import type { ParapetSpec, RouteSpec, ServiceSpec, TenantSpec, UserSpec } from "../spec/types";
+import type { HydratedConfig, HydratedRoute, HydratedService, HydratedTenant } from "./hydratedTypes";
+import type { ParapetSpec, RouteSpec, ServiceSpec, TenantSpec } from "../spec/types";
 import { getSecretFromEnv } from "../../cli/secretsources/envSource";
 import { promptForSecret } from "../../cli/secretsources/promptSource";
 
@@ -119,18 +119,11 @@ export async function resolveRefs(spec: ParapetSpec, opts: ResolveRefsOptions = 
     services.push({ label: s.label, tenant: s.tenant, allowed_routes: [...s.allowed_routes], parapet_token: token });
   }
 
-  const users: HydratedUser[] = [];
-  for (const u of spec.users) {
-    const pwd = await resolveRef(u.password_ref, `password for user ${u.username}`);
-    users.push({ username: u.username, role: u.role, password_plaintext: pwd });
-  }
-
   const hydrated: HydratedConfig = {
     version: spec.version,
     tenants,
     routes,
     services,
-    users,
   };
   return hydrated;
 }

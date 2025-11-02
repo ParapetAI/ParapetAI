@@ -1,52 +1,41 @@
-# syntax=docker/dockerfile:1
-
-# Builder stage: install deps and compile TypeScript to dist/
+# Builder: install deps and build (includes native compile)
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 
-# Install dependencies (including dev for typescript build)
+# Build dependencies for native modules (builder only)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
-# Copy runtime app sources and tsconfig, then build into apps/runtime/dist
+# build runtime TS
 COPY tsconfig.json ./
 COPY apps/runtime/tsconfig.json ./apps/runtime/
 COPY apps/runtime/src ./apps/runtime/src
 COPY apps/runtime/package*.json ./apps/runtime/
 RUN npm --workspace @parapetai/runtime run build
 
-# Build console app assets into /app/apps/console/dist
-COPY apps/console/package*.json ./apps/console/
-RUN npm ci --prefix apps/console
-COPY apps/console ./apps/console
-RUN npm run build --prefix apps/console
+# Prune dev deps from node_modules to keep runtime small
+RUN npm prune --omit=dev && npm cache clean --force
 
-# Runtime stage: copy only what's needed for runtime execution
+# Runtime: no compiler toolchain, only node + built outputs + node_modules
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Install build tools for native modules (better-sqlite3)
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install production dependencies only
+# Only prod deps copied from builder
+COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
-RUN npm ci --omit=dev
-
-# Copy runtime dist artifacts only (no CLI)
 COPY --from=builder /app/apps/runtime/dist/runtime ./dist/runtime
 COPY --from=builder /app/apps/runtime/dist/config ./dist/config
 COPY --from=builder /app/apps/runtime/dist/providers ./dist/providers
 
-# Static console assets (built in builder stage)
-COPY --from=builder /app/apps/console/dist/ /app/console-static/
-
-ENV NODE_ENV=production
+# Reclaim some space
+RUN npm cache clean --force && rm -rf /usr/lib/node_modules/npm /root/.npm
 RUN mkdir -p /data && chown -R node:node /data
 VOLUME ["/data"]
 USER node
 EXPOSE 8000
-
 CMD ["node", "dist/runtime/index.js"]

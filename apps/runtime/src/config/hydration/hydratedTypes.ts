@@ -5,7 +5,6 @@ export interface HydratedConfig {
   readonly tenants: readonly HydratedTenant[];
   readonly routes: readonly HydratedRoute[];
   readonly services: readonly HydratedService[];
-  readonly users: readonly HydratedUser[];
 }
 
 export interface HydratedTenant {
@@ -51,8 +50,3 @@ export interface HydratedService {
   readonly parapet_token: string; // resolved from parapet_token_ref
 }
 
-export interface HydratedUser {
-  readonly username: string;
-  readonly role: "admin" | "viewer";
-  readonly password_plaintext: string; // resolved from password_ref
-}

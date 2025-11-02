@@ -3,7 +3,6 @@ export interface ParapetSpec {
   readonly tenants: readonly TenantSpec[];
   readonly routes: readonly RouteSpec[];
   readonly services: readonly ServiceSpec[];
-  readonly users: readonly UserSpec[];
 }
 
 export interface TenantSpec {
@@ -53,8 +52,3 @@ export interface ServiceSpec {
   readonly parapet_token_ref: string;
 }
 
-export interface UserSpec {
-  readonly username: string;
-  readonly role: "admin" | "viewer";
-  readonly password_ref: string;
-}

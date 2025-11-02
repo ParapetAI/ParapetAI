@@ -1,4 +1,4 @@
-import type { ParapetSpec, RouteSpec, ServiceSpec, TenantSpec, UserSpec } from "./types";
+import type { ParapetSpec, RouteSpec, ServiceSpec, TenantSpec } from "./types";
 
 export interface ValidationIssue {
   readonly path: string;
@@ -18,7 +18,6 @@ export function validateRequired(spec: ParapetSpec): ValidationResult {
   if (!Array.isArray(spec.tenants)) issues.push({ path: "tenants", message: "tenants is required" });
   if (!Array.isArray(spec.routes)) issues.push({ path: "routes", message: "routes is required" });
   if (!Array.isArray(spec.services)) issues.push({ path: "services", message: "services is required" });
-  if (!Array.isArray(spec.users)) issues.push({ path: "users", message: "users is required" });
   if (issues.length) return { ok: false, issues };
   return { ok: true, issues: [] } as const;
 }
@@ -139,30 +138,6 @@ export function validateSpec(spec: ParapetSpec): ValidationResult {
     }
   }
 
-  // Users
-  const usernames = new Set<string>();
-  let adminCount = 0;
-  for (let i = 0; i < spec.users.length; i++) {
-    const u: UserSpec = spec.users[i] as UserSpec;
-    if (!u || typeof u.username !== "string" || u.username.trim().length === 0) {
-      issues.push({ path: `users[${i}].username`, message: "username is required" });
-    } else if (usernames.has(u.username)) {
-      issues.push({ path: `users[${i}].username`, message: "duplicate username" });
-    } else {
-      usernames.add(u.username);
-    }
-    if (u.role !== "admin" && u.role !== "viewer") {
-      issues.push({ path: `users[${i}].role`, message: "role must be 'admin' or 'viewer'" });
-    } else if (u.role === "admin") {
-      adminCount++;
-    }
-    if (!u?.password_ref || u.password_ref.trim().length === 0) {
-      issues.push({ path: `users[${i}].password_ref`, message: "password_ref is required" });
-    }
-  }
-  if (adminCount < 1) {
-    issues.push({ path: "users", message: "at least one admin user is required" });
-  }
 
   if (issues.length > 0) {
     return { ok: false, issues };
