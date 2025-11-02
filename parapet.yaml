@@ -5,11 +5,6 @@ tenants:
     spend:
       daily_usd_cap: 5.0
 
-users:
-  - username: alice
-    role: admin
-    password_ref: alice_pass_ref
-
 services:
   - label: openai-app
     tenant: default
@@ -83,4 +78,3 @@ routes:
 
 secrets:
   app_token_ref: ENV:PARAPET_APP_TOKEN
-  alice_pass_ref: ENV:PARAPET_ADMIN_ALICE_PASSWORD

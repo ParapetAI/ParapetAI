@@ -10,7 +10,6 @@ import { computeConfigChecksum } from "@parapetai/parapet/config/crypto/checksum
 import type { HydratedConfig } from "@parapetai/parapet/config/hydration/hydratedTypes";
 import { InMemoryVault } from "@parapetai/parapet/runtime/vault";
 import { initRuntimeContext, indexRoutes, indexServices, indexTenants } from "@parapetai/parapet/runtime/core/state";
-import { initAdminUsers } from "@parapetai/parapet/runtime/security/session";
 import { runMigrations } from "@parapetai/parapet/runtime/telemetry/migrate";
 
 let store: TelemetryStore | undefined;
@@ -57,8 +56,7 @@ export async function bootstrapRuntime(): Promise<void> {
     serviceKeyToContext,
   });
 
-  // Initialize admin users (hash passwords in memory)
-  initAdminUsers(hydrated.users);
+  // No admin users; console removed
 
   // Run DB migrations before opening the telemetry store
   try {
