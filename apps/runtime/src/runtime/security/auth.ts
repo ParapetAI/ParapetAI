@@ -1,4 +1,4 @@
-import { getRuntimeContext } from "@parapetai/parapet/runtime/core/state";
+import { getRuntimeContext } from "../core/state";
 
 export interface CallerContext {
   readonly serviceLabel: string;

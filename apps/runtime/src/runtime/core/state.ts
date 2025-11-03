@@ -1,5 +1,5 @@
-import type { HydratedConfig, HydratedRoute, HydratedTenant, HydratedService } from "@parapetai/parapet/config/hydration/hydratedTypes";
-import { InMemoryVault } from "@parapetai/parapet/runtime/vault";
+import type { HydratedConfig, HydratedRoute, HydratedTenant, HydratedService } from "@parapetai/config-core";
+import { InMemoryVault } from "../vault";
 
 export interface ServiceCallerContext {
   readonly serviceLabel: string;

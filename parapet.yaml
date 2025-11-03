@@ -39,6 +39,14 @@ routes:
       redaction:
         mode: block
         patterns: ["email", "api_key", "ip", "phone"]
+    # webhook:
+    #   url: "https://audit.internal/parapet-events"
+    #   secret_ref: parapet_audit_hmac_secret_ref
+    #   include_prompt_snippet: false
+    #   events:
+    #     policy_decisions: true
+    #     request_errors: true
+    #     provider_errors: true
 
   - name: embeddings
     tenant: default
@@ -75,6 +83,3 @@ routes:
       redaction:
         mode: warn
         patterns: ["email", "api_key", "ip", "phone"]
-
-secrets:
-  app_token_ref: ENV:PARAPET_APP_TOKEN

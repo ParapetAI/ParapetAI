@@ -1,4 +1,4 @@
-import type { ProviderType } from "@parapetai/parapet/config/spec/types";
+import type { ProviderType } from "@parapetai/config-core";
 
 function countWords(text: string): number {
   const trimmed = text.trim();
@@ -78,29 +78,8 @@ function getPrice(provider: ProviderType, model: string): Price {
       }
       return { inPerTokUsd: 0.0000005, outPerTokUsd: 0.0000015 };
     }
-    case "anthropic": {
-      const modelLower = model.toLowerCase();
-      if (modelLower.includes("opus")) {
-        return { inPerTokUsd: 0.000015, outPerTokUsd: 0.000075 };
-      }
-      if (modelLower.includes("sonnet")) {
-        if (modelLower.includes("3.5") || modelLower.includes("4")) {
-          return { inPerTokUsd: 0.000003, outPerTokUsd: 0.000015 };
-        }
-        return { inPerTokUsd: 0.000003, outPerTokUsd: 0.000015 };
-      }
-      if (modelLower.includes("haiku")) {
-        if (modelLower.includes("3.5")) {
-          return { inPerTokUsd: 0.0000008, outPerTokUsd: 0.000004 };
-        }
-        return { inPerTokUsd: 0.00000025, outPerTokUsd: 0.00000125 };
-      }
-      return { inPerTokUsd: 0.000003, outPerTokUsd: 0.000015 };
-    }
     case "local":
       return { inPerTokUsd: 0, outPerTokUsd: 0 };
-    default:
-      return { inPerTokUsd: 0.0000005, outPerTokUsd: 0.0000015 };
   }
 }
 

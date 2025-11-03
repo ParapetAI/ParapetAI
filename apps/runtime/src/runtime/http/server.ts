@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { APIResponse, type HealthResponse } from "@parapetai/parapet/runtime/core/types";
-import { registerInvokeRoutes } from "@parapetai/parapet/runtime/http/routes/index";
+import { APIResponse, type HealthResponse } from "../core/types";
+import { registerInvokeRoutes } from "./completions/index";
+import { registerEmbeddingRoutes } from "./embeddings/index";
 
 export interface RunningServer {
   readonly server: any;
@@ -40,6 +41,7 @@ export async function startHttpServer(port: number): Promise<RunningServer> {
   });
 
   registerInvokeRoutes(app);
+  registerEmbeddingRoutes(app);
 
   await app.listen({ port, host: "0.0.0.0" });
   const address = app.server.address();

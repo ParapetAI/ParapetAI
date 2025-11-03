@@ -3,11 +3,12 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
-      "@parapetai/parapet/runtime/*": ["src/runtime/*"],
-      "@parapetai/parapet/config/*": ["src/config/*"],
-      "@parapetai/parapet/providers/*": ["src/providers/*"]
+      "@parapetai/parapetai/runtime/*": ["src/runtime/*"],
+      "@parapetai/parapetai/providers/*": ["src/providers/*"]
     }
   },
   "include": ["src"],

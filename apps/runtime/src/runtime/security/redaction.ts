@@ -1,4 +1,4 @@
-import { REDACTION_RULES, type RedactionRuleName } from "@parapetai/parapet/config/constants";
+import { REDACTION_RULES, type RedactionRuleName } from "@parapetai/config-core";
 
 type RedactionResult =
   | { output: string; applied: boolean }

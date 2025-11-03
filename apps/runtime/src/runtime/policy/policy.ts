@@ -1,10 +1,10 @@
-import { getCallerContext } from "@parapetai/parapet/runtime/security/auth";
-import { getRuntimeContext } from "@parapetai/parapet/runtime/core/state";
-import { redact } from "@parapetai/parapet/runtime/security/redaction";
-import { estimateTokens, estimateCost } from "@parapetai/parapet/runtime/util/cost";
-import { checkAndReserve } from "@parapetai/parapet/runtime/policy/budget";
-import { mergeParams, enforceMaxTokens } from "@parapetai/parapet/providers/params";
-import type { PolicyDecision } from "@parapetai/parapet/runtime/core/types";
+import { getCallerContext } from "../security/auth";
+import { getRuntimeContext } from "../core/state";
+import { redact } from "../security/redaction";
+import { estimateTokens, estimateCost } from "../util/cost";
+import { checkAndReserve } from "./budget";
+import { mergeParams, enforceMaxTokens } from "../../providers/params";
+import type { PolicyDecision } from "../core/types";
 
 export interface PolicyInput {
   readonly messages?: Array<{ role: string; content: string }>;

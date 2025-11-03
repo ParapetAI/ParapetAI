@@ -1,4 +1,4 @@
-import { ProviderType } from "@parapetai/parapet/config/spec/types";
+import { ProviderType } from "@parapetai/config-core";
 
 export interface RuntimeRequest {
   readonly routeId: string;

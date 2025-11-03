@@ -1,6 +1,6 @@
-import type { TelemetryEvent } from "@parapetai/parapet/runtime/telemetry/telemetry";
-import { drainBuffer } from "@parapetai/parapet/runtime/telemetry/telemetry";
-import type { TelemetryStore } from "@parapetai/parapet/runtime/telemetry/store";
+import type { TelemetryEvent } from "./telemetry";
+import { drainBuffer } from "./telemetry";
+import type { TelemetryStore } from "./store";
 
 let intervalHandle: ReturnType<typeof setInterval> | undefined;
 

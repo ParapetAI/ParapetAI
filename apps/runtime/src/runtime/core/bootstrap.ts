@@ -1,16 +1,14 @@
 import fs from "node:fs";
 import Database from "better-sqlite3";
 import { hkdfSync } from "node:crypto";
-import { log, LogLevel } from "@parapetai/parapet/runtime/util/log";
-import { open as openStore, type TelemetryStore } from "@parapetai/parapet/runtime/telemetry/store";
-import { replayTelemetryIntoBudget } from "@parapetai/parapet/runtime/telemetry/replay";
-import { startWriter } from "@parapetai/parapet/runtime/telemetry/writer";
-import { decryptBlobToHydratedConfig } from "@parapetai/parapet/config/crypto/blobDecrypt";
-import { computeConfigChecksum } from "@parapetai/parapet/config/crypto/checksum";
-import type { HydratedConfig } from "@parapetai/parapet/config/hydration/hydratedTypes";
-import { InMemoryVault } from "@parapetai/parapet/runtime/vault";
-import { initRuntimeContext, indexRoutes, indexServices, indexTenants } from "@parapetai/parapet/runtime/core/state";
-import { runMigrations } from "@parapetai/parapet/runtime/telemetry/migrate";
+import { log, LogLevel } from "../util/log";
+import { open as openStore, type TelemetryStore } from "../telemetry/store";
+import { replayTelemetryIntoBudget } from "../telemetry/replay";
+import { startWriter } from "../telemetry/writer";
+import { decryptBlobToHydratedConfig, computeConfigChecksum, type HydratedConfig } from "@parapetai/config-core";
+import { InMemoryVault } from "../vault";
+import { initRuntimeContext, indexRoutes, indexServices, indexTenants } from "./state";
+import { runMigrations } from "../telemetry/migrate";
 
 let store: TelemetryStore | undefined;
 
@@ -39,6 +37,9 @@ export async function bootstrapRuntime(): Promise<void> {
     if (route.provider.provider_key) {
       vault.set(`route:${route.name}:provider_key`, route.provider.provider_key);
     }
+    if (route.webhook?.secret) {
+      vault.set(`route:${route.name}:webhook_secret`, route.webhook.secret);
+    }
   }
 
   // Build indices and service key map
@@ -55,8 +56,6 @@ export async function bootstrapRuntime(): Promise<void> {
     tenantByName,
     serviceKeyToContext,
   });
-
-  // No admin users; console removed
 
   // Run DB migrations before opening the telemetry store
   try {

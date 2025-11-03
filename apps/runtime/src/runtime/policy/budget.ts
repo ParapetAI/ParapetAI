@@ -1,4 +1,4 @@
-import type { TelemetryEvent } from "@parapetai/parapet/runtime/telemetry/telemetry";
+import type { TelemetryEvent } from "../telemetry/telemetry";
 
 // Track usage in micro-dollars (1e-6 USD) to preserve precision for small calls
 const tenantSpentMicros: Map<string, number> = new Map();
@@ -72,4 +72,12 @@ export function rebuildFromRows(rows: readonly TelemetryEvent[]): void {
     setTenantMicros(r.tenant, getTenantMicros(r.tenant) + micros);
     setRouteMicros(r.route, getRouteMicros(r.route) + micros);
   }
+}
+
+export function getTenantSpendTodayUsd(tenant: string): number {
+  return getTenantMicros(tenant) / 1_000_000;
+}
+
+export function getRouteSpendTodayUsd(route: string): number {
+  return getRouteMicros(route) / 1_000_000;
 }

@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import type { TelemetryEvent } from "@parapetai/parapet/runtime/telemetry/telemetry";
+import type { TelemetryEvent } from "./telemetry";
 
 export interface TelemetryStore {
   appendBatch(events: readonly TelemetryEvent[]): Promise<void>;

@@ -1,5 +1,5 @@
 import type { ProviderAdapter, LlmCallInput, LlmCallOutput } from "./types";
-import { estimateTokens } from "@parapetai/parapet/runtime/util/cost";
+import { estimateTokens } from "../runtime/util/cost";
 
 interface OpenAICompatibleResponse {
   model?: string;

@@ -1,5 +1,5 @@
 import type { ProviderAdapter, LlmCallInput, LlmCallOutput } from "./types";
-import { estimateTokens } from "@parapetai/parapet/runtime/util/cost";
+import { estimateTokens } from "../runtime/util/cost";
 
 interface OpenAIResponse {
   model?: string;
@@ -68,7 +68,15 @@ export const openaiProvider: ProviderAdapter = {
 
     if (!response.ok) {
       const errorData = (await response.json().catch(() => ({}))) as OpenAIResponse;
-      throw new Error(errorData.error?.message ?? `OpenAI API error: ${response.status} ${response.statusText}`);
+      const message = errorData.error?.message ?? `OpenAI API error: ${response.status} ${response.statusText}`;
+      const code = errorData.error?.code;
+      const type = errorData.error?.type;
+      const err = new Error(message) as Error & { provider: string; status: number; code?: string; errorType?: string };
+      err.provider = "openai";
+      err.status = response.status;
+      if (code) err.code = code;
+      if (type) err.errorType = type;
+      throw err;
     }
 
     if (input.stream) {
@@ -157,7 +165,15 @@ export const openaiProvider: ProviderAdapter = {
     const data = (await response.json()) as OpenAIResponse;
 
     if (data.error) {
-      throw new Error(data.error.message ?? "OpenAI API error");
+      const message = data.error.message ?? "OpenAI API error";
+      const code = data.error.code;
+      const type = data.error.type;
+      const err = new Error(message) as Error & { provider: string; status: number; code?: string; errorType?: string };
+      err.provider = "openai";
+      err.status = 502;
+      if (code) err.code = code;
+      if (type) err.errorType = type;
+      throw err;
     }
 
     let output: unknown;

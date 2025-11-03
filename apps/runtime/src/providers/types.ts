@@ -1,4 +1,4 @@
-import type { ProviderName } from "../config/constants";
+import type { ProviderName } from "@parapetai/config-core";
 
 export type EndpointType = "chat_completions" | "embeddings";
 
