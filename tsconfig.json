@@ -12,9 +12,9 @@
     "lib": ["ES2022"],
     "baseUrl": ".",
     "paths": {
-      "@parapetai/parapet/runtime/*": ["src/runtime/*"],
-      "@parapetai/parapet/config/*": ["src/config/*"],
-      "@parapetai/parapet/providers/*": ["src/providers/*"]
+      "@parapetai/parapetai/runtime/*": ["src/runtime/*"],
+      "@parapetai/parapetai/config/*": ["src/config/*"],
+      "@parapetai/parapetai/providers/*": ["src/providers/*"]
     }
   },
 }

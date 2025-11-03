@@ -1,12 +1,10 @@
-import type { ProviderAdapter } from "@parapetai/parapet/providers/types";
-import { openaiProvider } from "@parapetai/parapet/providers/openaiProvider";
-import { anthropicProvider } from "@parapetai/parapet/providers/anthropicProvider";
-import { localProvider } from "@parapetai/parapet/providers/localProvider";
-import type { HydratedRoute } from "@parapetai/parapet/config/hydration/hydratedTypes";
-import { getRuntimeContext } from "@parapetai/parapet/runtime/core/state";
-import { estimateCost } from "@parapetai/parapet/runtime/util/cost";
-import { mergeParams, validateParams, enforceMaxTokens } from "@parapetai/parapet/providers/params";
-import type { EndpointType } from "@parapetai/parapet/providers/types";
+import { HydratedRoute, EndpointType } from "@parapetai/config-core";
+import { localProvider } from "../../providers/localProvider";
+import { openaiProvider } from "../../providers/openaiProvider";
+import { mergeParams, enforceMaxTokens, validateParams } from "../../providers/params";
+import { LlmCallInput, ProviderAdapter } from "../../providers/types";
+import { estimateCost } from "../util/cost";
+import { getRuntimeContext } from "./state";
 
 export interface ProviderCallInput {
   readonly messages?: Array<{ role: string; content: string }>;
@@ -35,7 +33,7 @@ export async function callRouteProvider(
     throw new Error(`Invalid parameters: ${validation.error}`);
   }
   
-  const llmInput: import("@parapetai/parapet/providers/types").LlmCallInput = {
+  const llmInput: LlmCallInput = {
     endpointType,
     model: route.provider.model,
     apiKey,
@@ -53,6 +51,5 @@ export async function callRouteProvider(
 
 const registry: Readonly<Record<string, ProviderAdapter>> = {
   openai: openaiProvider,
-  anthropic: anthropicProvider,
   local: localProvider,
 };

@@ -1,39 +1,49 @@
 # Builder: install deps and build (includes native compile)
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
+ENV CI=true
 
 # Build dependencies for native modules (builder only)
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
-COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN corepack enable
+COPY package.json ./
+COPY pnpm-workspace.yaml ./
+# Pre-copy workspace manifests so install doesn't become stale when sources are copied later
+COPY apps/runtime/package.json ./apps/runtime/package.json
+COPY packages/cli/package.json ./packages/cli/package.json
+COPY libs/config-core/package.json ./libs/config-core/package.json
+RUN pnpm --version
+# Allow install without a lockfile in this environment
+RUN pnpm install --no-frozen-lockfile
 
-# build runtime TS
 COPY tsconfig.json ./
 COPY apps/runtime/tsconfig.json ./apps/runtime/
 COPY apps/runtime/src ./apps/runtime/src
-COPY apps/runtime/package*.json ./apps/runtime/
-RUN npm --workspace @parapetai/runtime run build
-
-# Prune dev deps from node_modules to keep runtime small
-RUN npm prune --omit=dev && npm cache clean --force
+COPY libs/config-core/tsconfig.json ./libs/config-core/tsconfig.json
+COPY libs/config-core/src ./libs/config-core/src
+# Build only required workspaces to avoid copying CLI sources
+RUN pnpm --filter @parapetai/config-core... run build && pnpm --filter @parapetai/runtime... run build
+RUN pnpm --filter @parapetai/runtime... rebuild better-sqlite3
+RUN pnpm deploy --filter @parapetai/runtime --prod --legacy /app/deploy
 
 # Runtime: no compiler toolchain, only node + built outputs + node_modules
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Only prod deps copied from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY package*.json ./
-COPY --from=builder /app/apps/runtime/dist/runtime ./dist/runtime
-COPY --from=builder /app/apps/runtime/dist/config ./dist/config
-COPY --from=builder /app/apps/runtime/dist/providers ./dist/providers
+COPY --from=builder /app/deploy/. ./
 
 # Reclaim some space
-RUN npm cache clean --force && rm -rf /usr/lib/node_modules/npm /root/.npm
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && npm rebuild better-sqlite3 --unsafe-perm \
+  && apt-get purge -y python3 make g++ \
+  && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm cache clean --force && rm -rf /usr/lib/node_modules/npm /root/.npm
 RUN mkdir -p /data && chown -R node:node /data
 VOLUME ["/data"]
 USER node

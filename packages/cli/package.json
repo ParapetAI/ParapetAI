@@ -1,0 +1,33 @@
+{
+  "name": "@parapetai/cli",
+  "version": "0.1.0",
+  "private": false,
+  "bin": {
+    "parapet": "./bin/parapet"
+  },
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "ts-node src/main.ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@parapetai/config-core": "workspace:*",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/inquirer": "^9.0.7",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
+

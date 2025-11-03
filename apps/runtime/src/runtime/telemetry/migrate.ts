@@ -1,6 +1,6 @@
 import { Database } from "better-sqlite3";
-import { MIGRATIONS, type MigrationContext } from "@parapetai/parapet/runtime/telemetry/migrationList";
-import { log, LogLevel } from "@parapetai/parapet/runtime/util/log";
+import { MIGRATIONS, type MigrationContext } from "./migrationList";
+import { log, LogLevel } from "../util/log";
 
 function ensureSchemaVersionTable(db: Database): void {
   db.exec(

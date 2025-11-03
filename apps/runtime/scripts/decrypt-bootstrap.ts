@@ -1,4 +1,4 @@
-import { decryptBlobToHydratedConfig } from "../src/config/crypto/blobDecrypt";
+import { decryptBlobToHydratedConfig } from "../../config/crypto/blobDecrypt";
 import path from "path";
 import fs from "fs";
 

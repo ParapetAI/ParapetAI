@@ -1,7 +1,10 @@
 {
   "name": "@parapetai/runtime",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
+  "dependencies": {
+    "@parapetai/config-core": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/runtime/core/index.ts",

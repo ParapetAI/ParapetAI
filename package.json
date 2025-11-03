@@ -1,10 +1,12 @@
 {
-  "name": "@parapetai/parapet",
+  "name": "@parapetai/parapetai",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*",
+    "libs/*"
   ],
   "exports": {
     "./runtime/*": "./dist/runtime/*.js",
@@ -12,12 +14,9 @@
     "./providers/*": "./dist/providers/*.js"
   },
   "scripts": {
-    "build": "npm run -ws build",
-    "start:runtime": "tsx apps/runtime/src/runtime/index.ts",
-    "parapet": "npm --workspace @parapetai/runtime run cli --",
-    "build:all": "npm run -ws build",
-    "dev": "npm run -ws dev",
-    "build:runtime:ws": "npm --workspace @parapetai/runtime run build",
+    "build": "pnpm -r build",
+    "start:runtime": "pnpm --filter @parapetai/runtime run dev",
+    "build:runtime:ws": "pnpm --filter @parapetai/runtime run build",
     "compose:up": "docker compose up -d --build",
     "compose:down": "docker compose down",
     "compose:logs": "docker compose logs -f",
@@ -25,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.18.13",
+    "openai": "^6.7.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },

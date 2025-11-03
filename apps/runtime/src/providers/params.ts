@@ -1,5 +1,5 @@
 import type { EndpointType } from "./types";
-import type { ProviderType } from "../config/spec/types";
+import type { ProviderType } from "@parapetai/config-core";
 
 export interface ValidationResult {
   readonly valid: boolean;
@@ -42,34 +42,6 @@ function validateOpenAIParams(params: Record<string, unknown>, endpointType: End
   return { valid: true };
 }
 
-function validateAnthropicParams(params: Record<string, unknown>): ValidationResult {
-  if (params.temperature !== undefined) {
-    const temp = Number(params.temperature);
-    if (isNaN(temp) || temp < 0 || temp > 1) {
-      return { valid: false, error: "temperature must be between 0 and 1" };
-    }
-  }
-  if (params.top_p !== undefined) {
-    const topP = Number(params.top_p);
-    if (isNaN(topP) || topP < 0 || topP > 1) {
-      return { valid: false, error: "top_p must be between 0 and 1" };
-    }
-  }
-  if (params.top_k !== undefined) {
-    const topK = Number(params.top_k);
-    if (isNaN(topK) || topK < 1 || !Number.isInteger(topK)) {
-      return { valid: false, error: "top_k must be a positive integer" };
-    }
-  }
-  if (params.max_tokens !== undefined) {
-    const maxTokens = Number(params.max_tokens);
-    if (isNaN(maxTokens) || maxTokens < 1 || !Number.isInteger(maxTokens)) {
-      return { valid: false, error: "max_tokens must be a positive integer" };
-    }
-  }
-  return { valid: true };
-}
-
 export function validateParams(
   providerType: ProviderType,
   endpointType: EndpointType,
@@ -77,9 +49,6 @@ export function validateParams(
 ): ValidationResult {
   if (providerType === "openai" || providerType === "local") {
     return validateOpenAIParams(params, endpointType);
-  }
-  if (providerType === "anthropic") {
-    return validateAnthropicParams(params);
   }
   return { valid: true };
 }

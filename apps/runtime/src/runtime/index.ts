@@ -1,6 +1,6 @@
-import { startHttpServer } from "@parapetai/parapet/runtime/http/server";
-import { log, LogLevel } from "@parapetai/parapet/runtime/util/log";
-import { bootstrapRuntime } from "@parapetai/parapet/runtime/core/bootstrap";
+import { startHttpServer } from "./http/server";
+import { log, LogLevel } from "./util/log";
+import { bootstrapRuntime } from "./core/bootstrap";
 
 const port: number = Number(process.env.PORT ?? 8000);
 

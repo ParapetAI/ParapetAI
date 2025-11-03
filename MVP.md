@@ -1,6 +1,6 @@
-# Parapet (MVP)
+# ParapetAI (MVP)
 
-Parapet is an LLM perimeter.
+ParapetAI is an LLM perimeter.
 
 You run it yourself. It sits between your internal services and any LLM provider (OpenAI, Anthropic, local models, etc.), and it becomes the single point of enforcement for:
 - who is allowed to call which model
@@ -9,25 +9,25 @@ You run it yourself. It sits between your internal services and any LLM provider
 - model/version drift lock
 - audit trail
 
-Parapet is **infra, not SaaS**. We do not see your prompts, we do not see your usage, we do not hold your provider keys. You deploy it in your own environment.
+ParapetAI is **infra, not SaaS**. We do not see your prompts, we do not see your usage, we do not hold your provider keys. You deploy it in your own environment.
 
-Parapet is **immutable at runtime**. There is no “log in and toggle a setting in prod.” All rules live in one config file in git, are compiled into an encrypted blob, and that blob is what Parapet boots from. If you want to change policy, you regenerate the blob and redeploy. That’s on purpose.
+ParapetAI is **immutable at runtime**. There is no "log in and toggle a setting in prod." All rules live in one config file in git, are compiled into an encrypted blob, and that blob is what ParapetAI boots from. If you want to change policy, you regenerate the blob and redeploy. That's on purpose.
 
 
 ---
 
-## Why Parapet exists
+## Why ParapetAI exists
 
-Without Parapet:
+Without ParapetAI:
 - Every service in your org is holding raw OpenAI / Anthropic keys.
 - You have no clue which service is spending what.
-- A dev can call GPT-4 with customer data and you’ll never know.
+- A dev can call GPT-4 with customer data and you'll never know.
 - Vendors silently swap model behavior under you.
 - Finance finds out about AI spend when the invoice lands.
 
-With Parapet:
-- Only Parapet holds provider keys.
-- Each internal service gets a Parapet-issued token with explicit allowed routes.
+With ParapetAI:
+- Only ParapetAI holds provider keys.
+- Each internal service gets a ParapetAI-issued token with explicit allowed routes.
 - Each route is pinned to an approved model with spend caps and redaction rules.
 - All usage is attributed (service X, tenant Y, route Z, cost $N).
 - Budgets are enforced in real time.
@@ -58,10 +58,10 @@ This is not “AI features.” This is a perimeter and an audit trail.
    - produces two outputs:
      - `PARAPET_MASTER_KEY`
      - `PARAPET_BOOTSTRAP_STATE` (an encrypted, base64 blob of the fully hydrated config)
-   You deploy Parapet with those two values as secrets.
+   You deploy ParapetAI with those two values as secrets.
 
 3. **Runtime is immutable.**  
-   The Parapet container:
+   The ParapetAI container:
    - reads `PARAPET_MASTER_KEY` and `PARAPET_BOOTSTRAP_STATE` from environment
    - decrypts the blob into memory
    - initializes its policy state, auth map, budgets, and provider clients
@@ -71,9 +71,9 @@ This is not “AI features.” This is a perimeter and an audit trail.
 
    If you want to change anything (budgets, allowed routes, provider keys, etc.), you regenerate a new blob and redeploy.
 
-4. **All LLM calls go through Parapet.**  
-   Your internal service hits Parapet instead of calling OpenAI/Anthropic directly.  
-   Parapet:
+4. **All LLM calls go through ParapetAI.**  
+   Your internal service hits ParapetAI instead of calling OpenAI/Anthropic directly.  
+   ParapetAI:
    - authenticates the caller
    - checks if that caller is allowed to hit that specific route
    - enforces spend caps, redaction, drift lock, token limits
@@ -85,7 +85,7 @@ This is not “AI features.” This is a perimeter and an audit trail.
    Your service never touches provider keys directly.
 
 5. **Telemetry + budgets.**  
-   Parapet tracks who called what, how big, how expensive, and whether anything was blocked.  
+   ParapetAI tracks who called what, how big, how expensive, and whether anything was blocked.  
    Spend caps are enforced in real time.  
    Budget usage persists across restarts.
 
@@ -97,7 +97,7 @@ This is not “AI features.” This is a perimeter and an audit trail.
 These are the core objects you define in `parapet.yaml`.
 
 ### Tenant
-Represents an accounting/policy boundary. In most setups, a tenant == one environment (`prod`, `staging`). In more advanced setups, a single Parapet instance can run multiple tenants (e.g. `prod-marketing` and `prod-legal`) with different provider keys and different redaction strictness.
+Represents an accounting/policy boundary. In most setups, a tenant == one environment (`prod`, `staging`). In more advanced setups, a single ParapetAI instance can run multiple tenants (e.g. `prod-marketing` and `prod-legal`) with different provider keys and different redaction strictness.
 
 Tenants allow:
 - per-tenant spend caps
@@ -122,15 +122,15 @@ A service is an internal caller (your backend, your worker, etc.).
 
 Each service:
 - belongs to a tenant
-- has a `parapet_token_ref` which resolves to its Parapet-issued auth token
-- has `allowed_routes` which lists which routes it’s allowed to call
+- has a `parapet_token_ref` which resolves to its ParapetAI-issued auth token
+- has `allowed_routes` which lists which routes it's allowed to call
 
-If a service tries to call a route not on its allowlist, Parapet blocks it.
+If a service tries to call a route not on its allowlist, ParapetAI blocks it.
 
 This means you can give different internal services different power. “frontend-worker can only call `summarizer`” while “legal-reviewer can call `legal_checks`.” Blast radius is enforced.
 
 ### User
-A human account for Parapet’s internal read-only admin surface (if enabled).
+A human account for ParapetAI's internal read-only admin surface (if enabled).
 
 Each user:
 - has `role` of `admin` or `viewer`
@@ -202,7 +202,7 @@ Notes:
 
 ## The build step (`parapet-build`)
 
-`parapet-build` is a CLI that prepares the encrypted blob Parapet will boot from.
+`parapet-build` is a CLI that prepares the encrypted blob ParapetAI will boot from.
 
 It does 3 things:
 
@@ -246,7 +246,7 @@ When `parapet.yaml` is valid:
   PARAPET_MASTER_KEY=<master-key-here>
   PARAPET_BOOTSTRAP_STATE=<base64-encrypted-blob-here>
 
-  Deploy Parapet with these two environment variables set.
+  Deploy ParapetAI with these two environment variables set.
   ```
 
 Those 2 values (the master key and the blob) are all the runtime needs.
@@ -260,14 +260,14 @@ This is also where CI/CD can get involved:
 
 ## Runtime boot sequence
 
-When you start the Parapet container in prod:
+When you start the ParapetAI container in prod:
 
 1. You pass two env vars (usually via your orchestrator's secret storage):
 
    * `PARAPET_MASTER_KEY`
    * `PARAPET_BOOTSTRAP_STATE`
 
-2. On startup Parapet:
+2. On startup ParapetAI:
 
    * decrypts `PARAPET_BOOTSTRAP_STATE` using `PARAPET_MASTER_KEY`
    * gets the fully hydrated config (tenants, routes, services, users, provider keys, budgets, policies)
@@ -276,51 +276,51 @@ When you start the Parapet container in prod:
      * service token → { service label, tenant, allowed routes }
      * route name → { provider adapter, policy, spend caps, drift settings, redaction rules }
      * tenant → spend caps
-   * initializes a “vault” in memory with provider credentials
+   * initializes a "vault" in memory with provider credentials
    * initializes in-memory spend counters for each `(tenant, route)`
    * initializes telemetry (see below)
-   * logs a deterministic checksum of the config for audit (“prod is running config hash abc123”)
-   * wipes any transient plaintext copies of secrets we don’t need anymore
+   * logs a deterministic checksum of the config for audit ("prod is running config hash abc123")
+   * wipes any transient plaintext copies of secrets we don't need anymore
 
-3. Parapet starts serving HTTP.
+3. ParapetAI starts serving HTTP.
 
-4. From this point on, Parapet is read-only. It will not accept changes to policy at runtime. There is no admin API to mutate budgets/routes.
+4. From this point on, ParapetAI is read-only. It will not accept changes to policy at runtime. There is no admin API to mutate budgets/routes.
    If you need to change anything, you build a new blob and redeploy the container with the updated secrets.
 
-This is deliberate. No drift, no “someone SSH’d in and turned off redaction quietly.”
+This is deliberate. No drift, no "someone SSH'd in and turned off redaction quietly."
 
 ---
 
 ## Request flow at runtime
 
-When your internal service calls Parapet:
+When your internal service calls ParapetAI:
 
-1. It hits `POST /:routeName` on Parapet (e.g. `/summarizer`) and includes its Parapet-issued token.
-2. Parapet resolves that token to a service identity.
+1. It hits `POST /:routeName` on ParapetAI (e.g. `/summarizer`) and includes its ParapetAI-issued token.
+2. ParapetAI resolves that token to a service identity.
    If invalid → reject immediately.
-3. Parapet checks:
+3. ParapetAI checks:
 
    * is the service allowed to call this route?
    * what tenant is this request billed to?
-4. Parapet pulls the route’s policy:
+4. ParapetAI pulls the route's policy:
 
    * token limits
    * budget caps
    * redaction mode
    * drift lock (model pinning)
-5. Parapet checks real-time budget counters for that `(tenant, route)`:
+5. ParapetAI checks real-time budget counters for that `(tenant, route)`:
 
    * would this call (estimated cost) blow past any daily cap?
    * if yes → reject and log it
-6. Parapet applies redaction rules if configured:
+6. ParapetAI applies redaction rules if configured:
 
    * `warn`: scrub obvious leaks (EMAIL, API_KEY, etc.) and continue, with a log flag
    * `block`: if we see sensitive patterns, reject outright
    * `off`: skip redaction
-7. Parapet injects the correct provider API key (from its in-memory vault — the caller never sees it)
-8. Parapet forwards the sanitized request to the upstream model (OpenAI, Anthropic, local, etc.) using a provider adapter
-9. Parapet gets the response, records tokens used / cost / latency, and returns the output to the caller.
-10. Parapet enqueues a telemetry event describing what happened.
+7. ParapetAI injects the correct provider API key (from its in-memory vault — the caller never sees it)
+8. ParapetAI forwards the sanitized request to the upstream model (OpenAI, Anthropic, local, etc.) using a provider adapter
+9. ParapetAI gets the response, records tokens used / cost / latency, and returns the output to the caller.
+10. ParapetAI enqueues a telemetry event describing what happened.
 
 The caller never talks to OpenAI/Anthropic directly.
 The caller never holds your provider key.
@@ -331,9 +331,9 @@ The caller never holds your provider key.
 
 ### Real-time budgets
 
-Parapet maintains in-memory “spend counters” per `(tenant, route)` for the current window (“today”).
+ParapetAI maintains in-memory "spend counters" per `(tenant, route)` for the current window ("today").
 
-Before allowing a request, Parapet:
+Before allowing a request, ParapetAI:
 
 * estimates the cost
 * checks if allowing it would exceed the configured `budget_daily_usd` for the route or tenant
@@ -345,7 +345,7 @@ Those counters are updated immediately in memory, so enforcement is O(1) and doe
 
 ### Telemetry store
 
-Parapet also needs an audit trail:
+ParapetAI also needs an audit trail:
 
 * which service called which route
 * when
@@ -354,7 +354,7 @@ Parapet also needs an audit trail:
 * cost
 * enforcement flags (budget hit, redaction triggered, drift violation, etc.)
 
-Parapet stores telemetry locally using a lightweight append-only store (SQLite or equivalent) on disk.
+ParapetAI stores telemetry locally using a lightweight append-only store (SQLite or equivalent) on disk.
 
 Importantly:
 
@@ -367,7 +367,7 @@ We do not write to disk for every request in-line.
 
 Instead:
 
-* Parapet queues telemetry events in memory.
+* ParapetAI queues telemetry events in memory.
 * A background flusher wakes up on a short interval (ex: ~100ms) or when the buffer reaches a certain size.
 * The flusher writes a batch of events to disk in one transaction.
 
@@ -380,21 +380,21 @@ If the process crashes between flushes, you could lose the last slice of telemet
 
 ### Replay on startup
 
-When Parapet boots, it:
+When ParapetAI boots, it:
 
 * opens the telemetry DB
-* loads “today’s” records
+* loads "today's" records
 * rebuilds the in-memory spend counters from those records
 
 So budget enforcement survives restarts.
 
-This is why Parapet needs persistent storage (below).
+This is why ParapetAI needs persistent storage (below).
 
 ---
 
 ## Persistent data directory
 
-Parapet needs a writable directory that survives container restarts.
+ParapetAI needs a writable directory that survives container restarts.
 
 We’ll refer to this path as `/data`.
 
@@ -405,7 +405,7 @@ What goes in `/data`:
 
 Why we need it:
 
-* If you redeploy Parapet without attaching the same volume, Parapet loses its telemetry history and will treat budgets like they’re fresh.
+* If you redeploy ParapetAI without attaching the same volume, ParapetAI loses its telemetry history and will treat budgets like they're fresh.
 * That means spend caps reset on restart. That’s bad.
 * It also means you lose auditing (“show me who called what yesterday”).
 
@@ -430,7 +430,7 @@ Security/compliance teams get an audit trail. Finance gets attribution. You stil
 
 ## Admin surface (read-only)
 
-Parapet can optionally expose a small read-only internal admin API for humans (not for services). This is protected by the `users` you defined in the config.
+ParapetAI can optionally expose a small read-only internal admin API for humans (not for services). This is protected by the `users` you defined in the config.
 
 Roles:
 
@@ -548,7 +548,7 @@ This keeps the runtime small, grokkable, and portable.
 
 ## Deployment
 
-You deploy Parapet like any internal service.
+You deploy ParapetAI like any internal service.
 
 ### Prereqs you must provide:
 
@@ -560,13 +560,13 @@ You deploy Parapet like any internal service.
 
 2. A persistent volume mounted at `/data`:
 
-   * Parapet writes telemetry and spend state here.
-   * If you don’t persist `/data`, budget enforcement resets on restart and you lose audit trail.
+   * ParapetAI writes telemetry and spend state here.
+   * If you don't persist `/data`, budget enforcement resets on restart and you lose audit trail.
 
 3. Network access:
 
-   * Parapet must be reachable by your internal services.
-   * Parapet must be allowed outbound to the LLM providers you configured (OpenAI/Anthropic/etc.) or to your own local model endpoint.
+   * ParapetAI must be reachable by your internal services.
+   * ParapetAI must be allowed outbound to the LLM providers you configured (OpenAI/Anthropic/etc.) or to your own local model endpoint.
 
 Example (conceptual Docker run):
 
@@ -584,8 +584,8 @@ Now your internal service calls `http://parapet.internal:8000/summarizer` instea
 
 ## Security model / honesty notes
 
-* Parapet is not magic. It’s a choke point with policy.
-* If a developer hardcodes their own OpenAI key in their service and bypasses Parapet entirely, Parapet can’t stop that. Parapet gives you visibility and enforcement where it’s used. You still need basic code review / network policy.
+* ParapetAI is not magic. It's a choke point with policy.
+* If a developer hardcodes their own OpenAI key in their service and bypasses ParapetAI entirely, ParapetAI can't stop that. ParapetAI gives you visibility and enforcement where it's used. You still need basic code review / network policy.
 * Secrets are decrypted in memory at runtime. In TypeScript/Node we cannot hard-guarantee zeroization due to GC, but we try to avoid unnecessary copies and never write provider keys to disk.
 * Telemetry persistence is batched. A crash between flushes can lose a short slice of recent usage. We document that so finance/legal understand the limits.
 * We do not store raw prompt bodies by default in telemetry. We store metadata.
@@ -600,7 +600,7 @@ In other words: this is not marketing fluff. This is actually enforceable behavi
 
 Not in MVP, but planned:
 
-* Multiple Parapet instances + central reporting sync
+* Multiple ParapetAI instances + central reporting sync
 * TypeORM / richer analytics mode for reporting, outside the hot path
 * More complex redaction patterns and custom regex/rulesets per route
 * A/B / model benchmarking (route → “candidate backends,” log cost/quality)
@@ -614,7 +614,7 @@ Not in MVP, but planned:
 
 ## Summary
 
-Parapet gives you:
+ParapetAI gives you:
 
 * A single controlled surface for all LLM usage
 * Per-service route access control
@@ -624,5 +624,5 @@ Parapet gives you:
 * Audit trail of who called what, at what cost, and whether we allowed or blocked it
 * A deployment story that lives entirely in your environment
 
-No opaque SaaS. No “just trust us.”
-Parapet is infrastructure.
+No opaque SaaS. No "just trust us."
+ParapetAI is infrastructure.

@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+"use strict";
+try {
+  require("../dist/main.js").run();
+} catch (err) {
+  // prettier-ignore
+  console.error(err && err.stack || String(err));
+  process.exit(1);
+}
+

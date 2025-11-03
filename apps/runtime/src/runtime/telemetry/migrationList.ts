@@ -1,5 +1,5 @@
 import { Database } from "better-sqlite3";
-import * as m001 from "@parapetai/parapet/runtime/telemetry/migrations/001_init";
+import * as m001 from "./migrations/001_init";
 
 export interface MigrationContext {
   telemetryKey: Buffer;

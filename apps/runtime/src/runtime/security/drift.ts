@@ -1,5 +1,4 @@
-import type { HydratedRoute } from "@parapetai/parapet/config/hydration/hydratedTypes";
-import type { ProviderType } from "@parapetai/parapet/config/spec/types";
+import type { HydratedRoute, ProviderType} from "@parapetai/config-core";
 
 export function checkDriftStrict(
   route: HydratedRoute,
