@@ -48,4 +48,4 @@ RUN mkdir -p /data && chown -R node:node /data
 VOLUME ["/data"]
 USER node
 EXPOSE 8000
-CMD ["node", "dist/runtime/index.js"]
+CMD ["node", "dist/index.js"]

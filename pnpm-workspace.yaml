@@ -4,5 +4,4 @@ packages:
   - libs/*
 
 ignoredBuiltDependencies:
-  - better-sqlite3
   - esbuild

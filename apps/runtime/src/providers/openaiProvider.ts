@@ -1,5 +1,5 @@
 import type { ProviderAdapter, LlmCallInput, LlmCallOutput } from "./types";
-import { estimateTokens } from "../runtime/util/cost";
+import { estimateTokens } from "../util/cost";
 
 interface OpenAIResponse {
   model?: string;

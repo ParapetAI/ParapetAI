@@ -1,6 +1,6 @@
 import type { FastifyReply } from "fastify";
 import { getRuntimeContext } from "../core/state";
-import type { EndpointType } from "../../providers/types";
+import type { EndpointType } from "../providers/types";
 
 export function extractBearerToken(headerValue: string): string | null {
   const trimmed = headerValue.trim();

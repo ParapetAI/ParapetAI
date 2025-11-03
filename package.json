@@ -20,7 +20,9 @@
     "compose:up": "docker compose up -d --build",
     "compose:down": "docker compose down",
     "compose:logs": "docker compose logs -f",
-    "compose:ps": "docker compose ps"
+    "compose:ps": "docker compose ps",
+    "script:openai-sdk-tester": "npx tsx .\\apps\\runtime\\scripts\\openai-sdk-tester.ts",
+    "script:descrypt-bootstrap-state": "npx tsx .\\packages\\cli\\scripts\\descrypt-bootstrap-state.ts"
   },
   "devDependencies": {
     "@types/node": "^22.18.13",

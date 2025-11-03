@@ -3,7 +3,7 @@ import { getRuntimeContext } from "../core/state";
 import { redact } from "../security/redaction";
 import { estimateTokens, estimateCost } from "../util/cost";
 import { checkAndReserve } from "./budget";
-import { mergeParams, enforceMaxTokens } from "../../providers/params";
+import { mergeParams, enforceMaxTokens } from "../providers/params";
 import type { PolicyDecision } from "../core/types";
 
 export interface PolicyInput {

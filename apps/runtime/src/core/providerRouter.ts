@@ -1,8 +1,8 @@
 import { HydratedRoute, EndpointType } from "@parapetai/config-core";
-import { localProvider } from "../../providers/localProvider";
-import { openaiProvider } from "../../providers/openaiProvider";
-import { mergeParams, enforceMaxTokens, validateParams } from "../../providers/params";
-import { LlmCallInput, ProviderAdapter } from "../../providers/types";
+import { localProvider } from "../providers/localProvider";
+import { openaiProvider } from "../providers/openaiProvider";
+import { mergeParams, enforceMaxTokens, validateParams } from "../providers/params";
+import { LlmCallInput, ProviderAdapter } from "../providers/types";
 import { estimateCost } from "../util/cost";
 import { getRuntimeContext } from "./state";
 
