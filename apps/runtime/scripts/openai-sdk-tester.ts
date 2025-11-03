@@ -1,7 +1,8 @@
 import { OpenAI } from "openai";
+import { ChatCompletionCreateParamsNonStreaming } from "openai/resources/index.mjs";
 
 const baseUrl = 'http://127.0.0.1:8000/v1/';
-const apiKey = '{parapet-service-token}';
+const apiKey = '{service-key}';
 
 const openai = new OpenAI({
   baseURL: baseUrl,
@@ -13,7 +14,9 @@ setImmediate(async () => {
   const chatResponse = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: "Hello, how are you?" }],
-  });
+    // reasoning_effort: "low",
+    // test_fake_param: 'test' // This should be rejected by the runtime
+  } as unknown as ChatCompletionCreateParamsNonStreaming);
   console.log(JSON.stringify(chatResponse, null, 2));
 
   console.log("Embeddings test...");

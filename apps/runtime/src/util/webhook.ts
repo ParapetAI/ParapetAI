@@ -81,7 +81,7 @@ export interface QueueAuditParams {
 
 export function queueAuditEvent(rt: RuntimeContext, routeName: string, eventType: AuditEventType, params: QueueAuditParams): void {
   const route = rt.routeByName.get(routeName);
-  if (!route || !route.webhook) return;
+  if (!route) return;
 
   // Build lazily and schedule off the hot path
   setImmediate(() => {
@@ -116,7 +116,13 @@ export function queueAuditEvent(rt: RuntimeContext, routeName: string, eventType
       prompt_excerpt,
     };
 
-    emitAuditEvent(rt, route.name, eventType, body);
+    if (route.webhook && shouldEmitForEvent(route, eventType)) {
+      emitAuditEvent(rt, route.name, eventType, body);
+      return;
+    }
+
+    // prettier-ignore
+    log(LogLevel.info, `audit_event type=${eventType} tenant=${params.tenant} route=${route.name} decision=${params.decision} reason=${body.reason_if_blocked ?? "-"} est_cost_usd=${body.estimated_cost_usd.toFixed(6)} actual_cost_usd=${body.actual_cost_usd.toFixed(6)} model=${model ?? "unknown"}`);
   });
 }
 

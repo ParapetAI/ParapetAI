@@ -22,7 +22,9 @@
     "compose:logs": "docker compose logs -f",
     "compose:ps": "docker compose ps",
     "script:openai-sdk-tester": "npx tsx .\\apps\\runtime\\scripts\\openai-sdk-tester.ts",
-    "script:descrypt-bootstrap-state": "npx tsx .\\packages\\cli\\scripts\\descrypt-bootstrap-state.ts"
+    "script:descrypt-bootstrap-state": "npx tsx .\\packages\\cli\\scripts\\descrypt-bootstrap-state.ts",
+    "script:webhook-receiver": "npx tsx .\\apps\\runtime\\scripts\\webhook-receiver.ts",
+    "parapet:build-config": "npx -y tsx packages/cli/src/main.ts build-config -o .env"
   },
   "devDependencies": {
     "@types/node": "^22.18.13",

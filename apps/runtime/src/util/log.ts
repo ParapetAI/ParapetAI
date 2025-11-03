@@ -5,7 +5,9 @@ export enum LogLevel {
 }
 
 export function log(level: LogLevel, message: string): void {
-  // prettier-ignore
-  console.log(`${new Date().toISOString()} [${level}] ${message}`);
+  setImmediate(() => {
+    // prettier-ignore
+    console.log(`${new Date().toISOString()} [${level}] ${message}`);
+  });
 }
 

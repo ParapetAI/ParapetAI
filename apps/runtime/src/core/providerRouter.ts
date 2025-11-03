@@ -4,6 +4,7 @@ import { openaiProvider } from "../providers/openaiProvider";
 import { mergeParams, enforceMaxTokens, validateParams } from "../providers/params";
 import { LlmCallInput, ProviderAdapter } from "../providers/types";
 import { estimateCost } from "../util/cost";
+import { log, LogLevel } from "../util/log";
 import { getRuntimeContext } from "./state";
 
 export interface ProviderCallInput {
@@ -30,7 +31,7 @@ export async function callRouteProvider(
   
   const validation = validateParams(route.provider.type, endpointType, mergedParams);
   if (!validation.valid) {
-    throw new Error(`Invalid parameters: ${validation.error}`);
+    throw new Error(`Invalid parameters: ${validation.error ?? "invalid parameters"}`);
   }
   
   const llmInput: LlmCallInput = {
@@ -46,6 +47,9 @@ export async function callRouteProvider(
   
   const result = await adapter.callLLM(llmInput);
   const finalCostUsd = estimateCost(route.provider.type, route.provider.model, result.tokensIn, result.tokensOut);
+
+  // prettier-ignore
+  log(LogLevel.info, `provider_call route=${route.name} provider=${route.provider.type} model=${route.provider.model} endpoint=${endpointType} tokens_in=${result.tokensIn} tokens_out=${result.tokensOut} latency_ms=${result.latencyMs} final_cost_usd=${finalCostUsd.toFixed(6)} stream=${Boolean(result.stream)}`);
   return { ...result, finalCostUsd } as const;
 }
 

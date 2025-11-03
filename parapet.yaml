@@ -40,7 +40,7 @@ routes:
         mode: block
         patterns: ["email", "api_key", "ip", "phone"]
     # webhook:
-    #   url: "https://audit.internal/parapet-events"
+    #   url: "https://e69b3bcf5784.ngrok-free.app"
     #   secret_ref: parapet_audit_hmac_secret_ref
     #   include_prompt_snippet: false
     #   events:
@@ -70,9 +70,9 @@ routes:
     tenant: default
     provider:
       type: local
-      model: llama3
+      model: deepseek-r1:8b
       endpoint_type: chat_completions
-      endpoint: http://localhost:11434/v1/chat/completions
+      endpoint: https://84cb0fa22d85.ngrok-free.app/v1/chat/completions
       default_params:
         temperature: 0.5
     policy:
