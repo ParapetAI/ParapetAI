@@ -30,6 +30,7 @@ export interface LlmCallOutput {
   readonly metadata?: {
     readonly model?: string;
     readonly systemFingerprint?: string;
+    readonly retryCount?: number; // number of retries performed (0 if none)
   };
 }
 

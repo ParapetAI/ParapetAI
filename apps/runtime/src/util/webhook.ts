@@ -22,6 +22,8 @@ export interface AuditEventBody {
   readonly redaction_mode: "warn" | "block" | "off" | null;
   readonly drift_strict: boolean | null;
   readonly prompt_excerpt: string;
+  readonly retry_count?: number;
+  readonly cache_hit?: boolean;
 }
 
 function shouldEmitForEvent(route: HydratedRoute, eventType: AuditEventType): boolean {
@@ -77,11 +79,14 @@ export interface QueueAuditParams {
   readonly include_prompt_snippet?: boolean;
   readonly messages?: Array<{ role: string; content: string }>;
   readonly model_override?: string | null;
+  readonly retry_count?: number;
+  readonly cache_hit?: boolean;
 }
 
 export function queueAuditEvent(rt: RuntimeContext, routeName: string, eventType: AuditEventType, params: QueueAuditParams): void {
   const route = rt.routeByName.get(routeName);
-  if (!route) return;
+  if (!route) 
+    return;
 
   // Build lazily and schedule off the hot path
   setImmediate(() => {
@@ -107,13 +112,15 @@ export function queueAuditEvent(rt: RuntimeContext, routeName: string, eventType
       reason_if_blocked: params.reason_if_blocked ?? (params.decision === "block" ? "unknown" : null),
       estimated_cost_usd: params.estimated_cost_usd ?? 0,
       actual_cost_usd: params.actual_cost_usd ?? 0,
-      budget_daily_usd: route.policy.budget_daily_usd,
+      budget_daily_usd: route.policy?.budget_daily_usd ?? null,
       budget_spend_today_usd: routeSpend,
       tenant_budget_daily_usd: rt.tenantByName.get(params.tenant)?.spend.daily_usd_cap ?? null,
       tenant_budget_spend_today_usd: tenantSpend,
-      redaction_mode: route.policy.redaction.mode,
-      drift_strict: route.policy.drift_strict,
+      redaction_mode: route.policy?.redaction.mode ?? null,
+      drift_strict: route.policy?.drift_strict ?? null,
       prompt_excerpt,
+      retry_count: params.retry_count,
+      cache_hit: params.cache_hit,
     };
 
     if (route.webhook && shouldEmitForEvent(route, eventType)) {

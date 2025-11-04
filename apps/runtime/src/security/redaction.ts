@@ -22,11 +22,16 @@ function escapeRegExp(s: string): string {
 }
 
 function tryParseSlashRegex(pattern: string): RegExp | null {
-  if (!pattern.startsWith("/")) return null;
+  if (!pattern.startsWith("/")) 
+    return null;
+
   const last = pattern.lastIndexOf("/");
-  if (last <= 0) return null;
+  if (last <= 0) 
+    return null;
+
   const body = pattern.slice(1, last);
   const flags = pattern.slice(last + 1) || "gi";
+
   try {
     return new RegExp(body, flags);
   } catch {
@@ -42,6 +47,7 @@ function buildCompiledPatterns(patterns: readonly string[]): CompiledPattern[] {
       enabledBuiltins.add(p as RedactionRuleName);
       continue;
     }
+
     let rx: RegExp | null = null;
     if (p.startsWith("re:")) {
       const body = p.slice(3);
@@ -57,9 +63,14 @@ function buildCompiledPatterns(patterns: readonly string[]): CompiledPattern[] {
         rx = new RegExp(escapeRegExp(p), "gi");
       }
     }
-    if (rx) out.push({ regex: rx, tag: "custom" });
+
+    if (rx) 
+      out.push({ regex: rx, tag: "custom" });
   }
-  for (const name of enabledBuiltins) out.push({ regex: regexByRule[name], tag: name });
+
+  for (const name of enabledBuiltins) 
+    out.push({ regex: regexByRule[name], tag: name });
+
   return out;
 }
 
@@ -68,7 +79,9 @@ export function redact(
   mode: "warn" | "block" | "off",
   patterns: readonly string[]
 ): RedactionResult {
-  if (mode === "off") return { output: input, applied: false } as const;
+  if (mode === "off") 
+    return { output: input, applied: false } as const;
+
   const compiled = buildCompiledPatterns(patterns);
   let found = false;
   for (const r of compiled) {
@@ -78,8 +91,13 @@ export function redact(
       break;
     }
   }
-  if (!found) return { output: input, applied: false } as const;
-  if (mode === "block") return { blocked: true, reason: "redaction_blocked" } as const;
+
+  if (!found) 
+    return { output: input, applied: false } as const;
+
+  if (mode === "block") 
+    return { blocked: true, reason: "redaction_blocked" } as const;
+
   // warn → scrub secrets
   let output = input;
   for (const r of compiled) {
@@ -95,5 +113,6 @@ export function redact(
         : "[REDACTED]";
     output = output.replace(r.regex, replacement);
   }
+  
   return { output, applied: true } as const;
 }

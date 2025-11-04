@@ -4,7 +4,7 @@ export function checkDriftStrict(
   route: HydratedRoute,
   intended: { provider: ProviderType; model: string }
 ): { ok: true } | { ok: false; reason: "drift_violation" } {
-  if (!route.policy.drift_strict) return { ok: true } as const;
+  if (!route.policy || !route.policy.drift_strict) return { ok: true } as const;
   const sameProvider = route.provider.type === intended.provider;
   const sameModel = route.provider.model === intended.model;
   return sameProvider && sameModel ? ({ ok: true } as const) : ({ ok: false, reason: "drift_violation" } as const);
@@ -48,7 +48,7 @@ export function detectDrift(
   expectedCost: number,
   metadata?: { model?: string; systemFingerprint?: string }
 ): DriftDetectionResult {
-  if (!route.policy.drift_detection.enabled) {
+  if (!route.policy?.drift_detection.enabled) {
     return { detected: false };
   }
 

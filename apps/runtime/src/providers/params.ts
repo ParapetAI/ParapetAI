@@ -252,16 +252,19 @@ export function mergeParams(
   requestParams: Readonly<Record<string, unknown>>
 ): Record<string, unknown> {
   const merged: Record<string, unknown> = {};
+
   if (routeDefaults) {
     for (const [key, value] of Object.entries(routeDefaults)) {
       merged[key] = value;
     }
   }
+
   for (const [key, value] of Object.entries(requestParams)) {
     if (value !== undefined) {
       merged[key] = value;
     }
   }
+  
   return merged;
 }
 
@@ -273,10 +276,17 @@ export function enforceMaxTokens(
   if (endpointType === "embeddings") {
     return params;
   }
+
+  // When policy is omitted, we treat maxTokensOut<=0 as "do not enforce"
+  if (!Number.isFinite(maxTokensOut) || maxTokensOut <= 0) {
+    return params;
+  }
+
   const currentMaxTokens = params.max_tokens !== undefined ? Number(params.max_tokens) : undefined;
   if (currentMaxTokens === undefined || currentMaxTokens > maxTokensOut) {
     return { ...params, max_tokens: maxTokensOut };
   }
+
   return params;
 }
 

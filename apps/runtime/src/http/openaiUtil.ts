@@ -29,10 +29,16 @@ export function selectRouteNameByModel(
 ): string | null {
   for (const name of allowedRoutes) {
     const r = rt.routeByName.get(name);
-    if (!r) continue;
+    if (!r) 
+      continue;
+
     const et = r.provider.endpoint_type ?? "chat_completions";
-    if (et !== endpointType) continue;
-    if (r.provider.model === model) return r.name;
+
+    if (et !== endpointType) 
+      continue;
+    
+    if (r.provider.model === model) 
+      return r.name;
   }
   return null;
 }

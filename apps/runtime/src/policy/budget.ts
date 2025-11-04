@@ -20,15 +20,24 @@ function setRouteMicros(route: string, micros: number): void {
   routeSpentMicros.set(route, Math.max(0, micros));
 }
 
+export type CheckAndReserveResult = {
+  ok: true;
+  tenantBudgetBeforeUsd: number;
+  routeBudgetBeforeUsd: number;
+} | {
+  ok: false;
+  reason: "budget_exceeded";
+  tenantBudgetBeforeUsd: number;
+  routeBudgetBeforeUsd: number;
+}
+
 export function checkAndReserve(
   tenant: string,
   route: string,
   estCostUsd: number,
   routeCapUsd: number,
   tenantCapUsd: number
-):
-  | { ok: true; tenantBudgetBeforeUsd: number; routeBudgetBeforeUsd: number }
-  | { ok: false; reason: "budget_exceeded"; tenantBudgetBeforeUsd: number; routeBudgetBeforeUsd: number } {
+): CheckAndReserveResult {
   const estMicros = Math.round(estCostUsd * 1_000_000);
   const tenantBeforeMicros = getTenantMicros(tenant);
   const routeBeforeMicros = getRouteMicros(route);

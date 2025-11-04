@@ -15,7 +15,10 @@ export async function startHttpServer(port: number): Promise<RunningServer> {
   // tolerant JSON parser: treat empty body as {}, and invalid JSON as null so routes can handle
   app.addContentTypeParser(/^application\/json(?:;.*)?$/i, { parseAs: "string" }, (_req, body, done) => {
     const text = typeof body === "string" ? body : String(body ?? "");
-    if (text.trim() === "") return done(null, {});
+
+    if (text.trim() === "") 
+      return done(null, {});
+
     try {
       const parsed = JSON.parse(text);
       return done(null, parsed);
@@ -30,6 +33,7 @@ export async function startHttpServer(port: number): Promise<RunningServer> {
       const response: APIResponse = { statusCode: 400, error: "invalid_json" };
       return reply.code(response.statusCode).send(response);
     }
+
     const response: APIResponse = { statusCode: 500, error: "internal_error" };
     return reply.code(response.statusCode).send(response);
   });
@@ -37,6 +41,7 @@ export async function startHttpServer(port: number): Promise<RunningServer> {
 
   app.get("/health", async (_request, reply) => {
     const response: APIResponse<HealthResponse> = { statusCode: 200, data: { ok: true } };
+
     return reply.code(response.statusCode).send(response);
   });
 
@@ -46,6 +51,7 @@ export async function startHttpServer(port: number): Promise<RunningServer> {
   await app.listen({ port, host: "0.0.0.0" });
   const address = app.server.address();
   const boundPort = (address && typeof address === "object" ? (address as any).port : port) as number;
+  
   return {
     server: app.server,
     port: boundPort,

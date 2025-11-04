@@ -12,6 +12,13 @@ services:
       - openai
       - embeddings
     parapet_token_ref: openai_app_token_ref
+
+  - label: openai-app-no-policy
+    tenant: default
+    allowed_routes:
+      - openai-no-policy
+    parapet_token_ref: openai_app_no_policy_token_ref
+
   - label: local-app
     tenant: default
     allowed_routes:
@@ -19,12 +26,25 @@ services:
     parapet_token_ref: local_app_token_ref
 
 routes:
+  - name: openai-no-policy
+    tenant: default
+    provider:
+      type: openai
+      model: gpt-4o-mini
+      endpoint_type: chat_completions
+      endpoint: https://api.openai.com/v1
+      provider_key_ref: openai_app_no_policy_token_ref
+      default_params:
+        temperature: 0.7
+        top_p: 0.9
+
   - name: openai
     tenant: default
     provider:
       type: openai
       model: gpt-4o-mini
       endpoint_type: chat_completions
+      endpoint: https://api.openai.com/v1
       provider_key_ref: openai_api_key_ref
       default_params:
         temperature: 0.7
@@ -37,8 +57,20 @@ routes:
       drift_detection:
         sensitivity: medium  # low (25%), medium (15%), high (10%)
       redaction:
-        mode: block
+        mode: warn # block, warn, off
         patterns: ["email", "api_key", "ip", "phone"]
+    retries:
+      max_attempts: 3
+      base_ms: 200
+      jitter: true
+      retry_on: [429, 500, 502, 503, 504]
+      max_elapsed_ms: 10000
+    cache:
+      enabled: true
+      mode: exact
+      ttl_ms: 30000
+      max_entries: 5000
+      include_params: true
     # webhook:
     #   url: "https://e69b3bcf5784.ngrok-free.app"
     #   secret_ref: parapet_audit_hmac_secret_ref
@@ -54,6 +86,7 @@ routes:
       type: openai
       model: text-embedding-3-small
       endpoint_type: embeddings
+      endpoint: https://api.openai.com/v1
       provider_key_ref: openai_api_key_ref
     policy:
       max_tokens_in: 8000
@@ -71,10 +104,8 @@ routes:
     provider:
       type: local
       model: deepseek-r1:8b
-      endpoint_type: chat_completions
-      endpoint: https://84cb0fa22d85.ngrok-free.app/v1/chat/completions
-      default_params:
-        temperature: 0.5
+      endpoint_type: embeddings
+      endpoint: https://bbf031e8ecd1.ngrok-free.app/v1
     policy:
       max_tokens_in: 4000
       max_tokens_out: 4000

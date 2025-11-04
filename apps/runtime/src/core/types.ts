@@ -23,6 +23,19 @@ export type PolicyDecision =
       driftStrict: boolean;
     };
 
+
+export type RouteCache = {
+  readonly lru: {
+    get(key: string): unknown;
+    set(key: string, value: unknown, ttl?: number): void;
+    has(key: string): boolean;
+    readonly size: number;
+  };
+  readonly stats: { enabled: boolean; hits: number; misses: number; evictions: number };
+};
+
+export type RouteCacheByName = Map<string, RouteCache>;
+
 // API responses
 
 export interface HealthResponse {

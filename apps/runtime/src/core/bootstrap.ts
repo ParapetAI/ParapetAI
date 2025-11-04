@@ -8,7 +8,9 @@ import { startWriter } from "../telemetry/writer";
 import { decryptBlobToHydratedConfig, computeConfigChecksum, type HydratedConfig } from "@parapetai/config-core";
 import { InMemoryVault } from "../vault";
 import { initRuntimeContext, indexRoutes, indexServices, indexTenants } from "./state";
+import { lru } from "tiny-lru";
 import { runMigrations } from "../telemetry/migrate";
+import { RouteCacheByName } from "./types";
 
 let store: TelemetryStore | undefined;
 
@@ -47,6 +49,24 @@ export async function bootstrapRuntime(): Promise<void> {
   const tenantByName = indexTenants(hydrated.tenants);
   const serviceKeyToContext = indexServices(hydrated.services);
 
+  // Initialize per-route caches (opt-in per route)
+  const routeCacheByName: RouteCacheByName = new Map();
+  
+  for (const route of hydrated.routes) {
+    const enabled = route.cache?.enabled === true;
+    if (!enabled) 
+      continue;
+
+    const maxEntries = Math.max(1, Math.floor(route.cache?.max_entries ?? 5000));
+    const ttlMs = Math.max(0, Math.floor(route.cache?.ttl_ms ?? 30000));
+    const cache = lru(maxEntries, ttlMs);
+
+    routeCacheByName.set(route.name, {
+      lru: cache as any,
+      stats: { enabled: true, hits: 0, misses: 0, evictions: 0 },
+    });
+  }
+
   initRuntimeContext({
     startedAt: Date.now(),
     checksum,
@@ -55,6 +75,7 @@ export async function bootstrapRuntime(): Promise<void> {
     routeByName,
     tenantByName,
     serviceKeyToContext,
+    routeCacheByName,
   });
 
   // Run DB migrations before opening the telemetry store

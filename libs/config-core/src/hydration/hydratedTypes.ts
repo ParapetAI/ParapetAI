@@ -26,7 +26,7 @@ export interface HydratedRoute {
     readonly endpoint?: string; // for local providers
     readonly default_params?: Readonly<Record<string, unknown>>; // route-level parameter defaults
   };
-  readonly policy: {
+  readonly policy?: {
     readonly max_tokens_in: number;
     readonly max_tokens_out: number;
     readonly budget_daily_usd: number;
@@ -40,6 +40,20 @@ export interface HydratedRoute {
       readonly mode: "warn" | "block" | "off";
       readonly patterns: readonly string[];
     };
+  };
+  readonly retries?: {
+    readonly max_attempts: number;
+    readonly base_ms: number;
+    readonly jitter: boolean;
+    readonly retry_on: readonly number[];
+    readonly max_elapsed_ms: number;
+  };
+  readonly cache?: {
+    readonly enabled: boolean;
+    readonly mode: "exact";
+    readonly ttl_ms: number;
+    readonly max_entries: number;
+    readonly include_params: boolean;
   };
   readonly webhook?: {
     readonly url: string;

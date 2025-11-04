@@ -17,19 +17,23 @@ interface DecisionArgs {
   readonly tokensIn?: number;
   readonly tokensOut?: number;
   readonly latencyMs?: number;
+  readonly retryCount?: number;
   readonly messagesForSnippet?: Array<{ role: string; content: string }>;
   readonly includePromptSnippet?: boolean;
   readonly responseModel?: string;
   readonly systemFingerprint?: string;
   readonly driftDetected?: boolean;
   readonly driftReason?: string;
+  readonly cacheHit?: boolean;
 }
 
 export function recordCallAndAuditDecision(rt: RuntimeContext, args: DecisionArgs): void {
   const route = rt.routeByName.get(args.routeName);
-  if (!route) return;
+  
+  if (!route) 
+    return;
 
-  const driftStrict: boolean = route.policy.drift_strict;
+  const driftStrict: boolean = route.policy?.drift_strict ?? false;
   const budgetBefore: number =
     typeof args.budgetBeforeUsd === "number"
       ? args.budgetBeforeUsd
@@ -50,11 +54,13 @@ export function recordCallAndAuditDecision(rt: RuntimeContext, args: DecisionArg
     tokens_in: args.tokensIn,
     tokens_out: args.tokensOut,
     latency_ms: args.latencyMs,
+    retry_count: args.retryCount,
     checksum_config: rt.checksum,
     drift_detected: args.driftDetected,
     drift_reason: args.driftReason,
     response_model: args.responseModel,
     system_fingerprint: args.systemFingerprint,
+    cache_hit: args.cacheHit,
   };
 
   recordCall(telemetry);
@@ -67,6 +73,8 @@ export function recordCallAndAuditDecision(rt: RuntimeContext, args: DecisionArg
     actual_cost_usd: typeof args.finalCostUsd === "number" ? args.finalCostUsd : 0,
     include_prompt_snippet: args.includePromptSnippet === true,
     messages: args.messagesForSnippet,
+    retry_count: args.retryCount,
+    cache_hit: args.cacheHit,
   });
 }
 
@@ -75,11 +83,14 @@ interface ProviderErrorArgs {
   readonly routeName: string;
   readonly serviceLabel: string;
   readonly estCostUsd?: number;
+  readonly retryCount?: number;
 }
 
 export function recordCallAndAuditProviderError(rt: RuntimeContext, args: ProviderErrorArgs): void {
   const route = rt.routeByName.get(args.routeName);
-  if (!route) return;
+
+  if (!route) 
+    return;
 
   const telemetry: TelemetryEvent = {
     ts: Date.now(),
@@ -89,9 +100,10 @@ export function recordCallAndAuditProviderError(rt: RuntimeContext, args: Provid
     allowed: false,
     block_reason: "provider_error",
     redaction_applied: false,
-    drift_strict: route.policy.drift_strict,
+    drift_strict: route.policy?.drift_strict ?? false,
     budget_before_usd: getTenantSpendTodayUsd(args.tenant),
     est_cost_usd: typeof args.estCostUsd === "number" ? args.estCostUsd : 0,
+    retry_count: args.retryCount,
     checksum_config: rt.checksum,
   };
 
@@ -103,6 +115,7 @@ export function recordCallAndAuditProviderError(rt: RuntimeContext, args: Provid
     reason_if_blocked: "server_error",
     estimated_cost_usd: typeof args.estCostUsd === "number" ? args.estCostUsd : 0,
     actual_cost_usd: 0,
+    retry_count: args.retryCount,
   });
 }
 

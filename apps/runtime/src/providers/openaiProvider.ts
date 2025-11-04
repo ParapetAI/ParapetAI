@@ -1,5 +1,6 @@
 import type { ProviderAdapter, LlmCallInput, LlmCallOutput } from "./types";
 import { estimateTokens } from "../util/cost";
+import { buildOpenAICompatibleUrl } from "./url";
 
 interface OpenAIResponse {
   model?: string;
@@ -18,12 +19,6 @@ interface OpenAIResponse {
   };
 }
 
-function buildOpenAIUrl(endpoint: string | undefined, endpointType: string): string {
-  if (endpoint) return endpoint;
-  const base = "https://api.openai.com/v1";
-  if (endpointType === "embeddings") return `${base}/embeddings`;
-  return `${base}/chat/completions`;
-}
 
 function parseSSEChunk(chunk: string): OpenAIResponse | null {
   if (!chunk.startsWith("data: ")) return null;
@@ -39,8 +34,12 @@ function parseSSEChunk(chunk: string): OpenAIResponse | null {
 export const openaiProvider: ProviderAdapter = {
   name: "openai",
   async callLLM(input: LlmCallInput): Promise<LlmCallOutput> {
+    if (!input.endpoint || input.endpoint.trim().length === 0) {
+      throw new Error("OpenAI provider requires 'endpoint' to be set (base like https://api.openai.com/v1 or full path)");
+    }
+
     const start = Date.now();
-    const url = buildOpenAIUrl(input.endpoint, input.endpointType);
+    const url = buildOpenAICompatibleUrl(input.endpoint, input.endpointType);
 
     const requestBody: Record<string, unknown> = {
       model: input.model,
@@ -74,14 +73,19 @@ export const openaiProvider: ProviderAdapter = {
       const err = new Error(message) as Error & { provider: string; status: number; code?: string; errorType?: string };
       err.provider = "openai";
       err.status = response.status;
-      if (code) err.code = code;
-      if (type) err.errorType = type;
+
+      if (code) 
+        err.code = code;
+      if (type) 
+        err.errorType = type;
+
       throw err;
     }
 
     if (input.stream) {
       let responseModel: string | undefined;
       let systemFingerprint: string | undefined;
+
       const stream = new ReadableStream({
         async start(controller) {
           const reader = response.body?.getReader();
@@ -97,19 +101,26 @@ export const openaiProvider: ProviderAdapter = {
           try {
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done) 
+                break;
 
               buffer += decoder.decode(value, { stream: true });
               const lines = buffer.split("\n\n");
               buffer = lines.pop() ?? "";
 
               for (const line of lines) {
-                if (line.trim() === "") continue;
-                const chunk = parseSSEChunk(line);
-                if (!chunk) continue;
+                if (line.trim() === "") 
+                  continue;
 
-                if (chunk.model) responseModel = chunk.model;
-                if (chunk.system_fingerprint) systemFingerprint = chunk.system_fingerprint;
+                const chunk = parseSSEChunk(line);
+                if (!chunk) 
+                  continue;
+
+                if (chunk.model) 
+                  responseModel = chunk.model;
+
+                if (chunk.system_fingerprint) 
+                  systemFingerprint = chunk.system_fingerprint;
 
                 if (chunk.usage) {
                   tokensIn = chunk.usage.prompt_tokens ?? tokensIn;
@@ -127,8 +138,12 @@ export const openaiProvider: ProviderAdapter = {
             if (buffer.trim()) {
               const chunk = parseSSEChunk(`data: ${buffer}`);
               if (chunk) {
-                if (chunk.model) responseModel = chunk.model;
-                if (chunk.system_fingerprint) systemFingerprint = chunk.system_fingerprint;
+                if (chunk.model) 
+                  responseModel = chunk.model;
+
+                if (chunk.system_fingerprint) 
+                  systemFingerprint = chunk.system_fingerprint;
+
                 const sseLine = `data: ${JSON.stringify(chunk)}\n\n`;
                 controller.enqueue(new TextEncoder().encode(sseLine));
               }
@@ -171,8 +186,13 @@ export const openaiProvider: ProviderAdapter = {
       const err = new Error(message) as Error & { provider: string; status: number; code?: string; errorType?: string };
       err.provider = "openai";
       err.status = 502;
-      if (code) err.code = code;
-      if (type) err.errorType = type;
+
+      if (code) 
+        err.code = code;
+
+      if (type) 
+        err.errorType = type;
+      
       throw err;
     }
 
