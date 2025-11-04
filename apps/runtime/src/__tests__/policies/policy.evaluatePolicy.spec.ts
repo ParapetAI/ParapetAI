@@ -125,7 +125,7 @@ describe("evaluatePolicy - no policy passthrough", () => {
       { role: "user", content: "Hello there" },
       { role: "assistant", content: "Hi" },
     ];
-    const tokensIn = estimateTokens(messages.map(m => m.content).join("\n"));
+    const tokensIn = estimateTokens(messages.map(message => message.content).join("\n"));
     const expectedCost = estimateCost(route.provider.type, route.provider.model, tokensIn, Math.max(1, Math.floor(tokensIn * 0.25)));
 
     const res = await evaluatePolicy("key1", "r1", { messages });
@@ -243,7 +243,7 @@ describe("evaluatePolicy - policy enforcement", () => {
     bootstrapRuntime({ tenants: [makeTenant("t1", 1000)], routes: [route], services: [makeService("svc", "t1", ["r1"], "key1")] });
 
     const messages = [{ role: "user", content: "A fairly long prompt to get a bigger token estimate." }];
-    const tokensIn = estimateTokens(messages.map(m => m.content).join("\n"));
+    const tokensIn = estimateTokens(messages.map(message => message.content).join("\n"));
 
     // request lower than policy → effectiveCap = request
     const requestMax = 128;

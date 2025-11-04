@@ -17,8 +17,8 @@ interface CompiledPattern {
   readonly tag: RedactionRuleName | "custom";
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function tryParseSlashRegex(pattern: string): RegExp | null {
@@ -48,24 +48,24 @@ function buildCompiledPatterns(patterns: readonly string[]): CompiledPattern[] {
       continue;
     }
 
-    let rx: RegExp | null = null;
+    let regex: RegExp | null = null;
     if (p.startsWith("re:")) {
       const body = p.slice(3);
       try {
-        rx = new RegExp(body, "gi");
+        regex = new RegExp(body, "gi");
       } catch {
-        rx = null;
+        regex = null;
       }
     } else {
-      rx = tryParseSlashRegex(p);
-      if (!rx) {
+      regex = tryParseSlashRegex(p);
+      if (!regex) {
         // treat as literal substring
-        rx = new RegExp(escapeRegExp(p), "gi");
+        regex = new RegExp(escapeRegExp(p), "gi");
       }
     }
 
-    if (rx) 
-      out.push({ regex: rx, tag: "custom" });
+    if (regex) 
+      out.push({ regex: regex, tag: "custom" });
   }
 
   for (const name of enabledBuiltins) 
@@ -84,9 +84,9 @@ export function redact(
 
   const compiled = buildCompiledPatterns(patterns);
   let found = false;
-  for (const r of compiled) {
-    r.regex.lastIndex = 0;
-    if (r.regex.test(input)) {
+  for (const pattern of compiled) {
+    pattern.regex.lastIndex = 0;
+    if (pattern.regex.test(input)) {
       found = true;
       break;
     }
@@ -100,18 +100,18 @@ export function redact(
 
   // warn → scrub secrets
   let output = input;
-  for (const r of compiled) {
+  for (const pattern of compiled) {
     const replacement =
-      r.tag === "email"
+      pattern.tag === "email"
         ? "[REDACTED_EMAIL]"
-        : r.tag === "api_key"
+        : pattern.tag === "api_key"
         ? "[REDACTED_API_KEY]"
-        : r.tag === "ip"
+        : pattern.tag === "ip"
         ? "[REDACTED_IP]"
-        : r.tag === "phone"
+        : pattern.tag === "phone"
         ? "[REDACTED_PHONE]"
         : "[REDACTED]";
-    output = output.replace(r.regex, replacement);
+    output = output.replace(pattern.regex, replacement);
   }
   
   return { output, applied: true } as const;

@@ -60,7 +60,7 @@ async function pipeStreamWithRetries(
         writeChunk(chunk);
       }
       break;
-    } catch (e) {
+    } catch (error) {
       reader.releaseLock();
       if (!retries || attempt >= maxAttempts || Date.now() - start >= (retries?.max_elapsed_ms ?? 0)) {
         break;
@@ -122,7 +122,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       return sendError(reply, "invalid_body");
     }
 
-    const rt = getRuntimeContext();
+    const runtimeContext = getRuntimeContext();
     const caller = getCallerContext(token);
     if (!caller) {
       // prettier-ignore
@@ -130,7 +130,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       return sendError(reply, "invalid_parapet_api_key");
     }
 
-    const routeName = selectRouteNameByModel(caller.allowedRoutes, body.model, rt, "chat_completions");
+    const routeName = selectRouteNameByModel(caller.allowedRoutes, body.model, runtimeContext, "chat_completions");
     if (!routeName) {
       // prettier-ignore
       log(LogLevel.warn, `policy_block endpoint=chat_completions tenant=${caller.tenant} reason=drift_violation model=${body.model}`);
@@ -138,7 +138,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       return sendError(reply, "drift_violation");
     }
 
-    const route = rt.routeByName.get(routeName);
+    const route = runtimeContext.routeByName.get(routeName);
     if (!route) {
       // prettier-ignore
       log(LogLevel.warn, `request_invalid endpoint=chat_completions tenant=${caller.tenant} reason=unknown_route route=${routeName}`);
@@ -148,7 +148,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
     const tenantName = caller.tenant;
 
     if (!Array.isArray(body.messages) || body.messages.length === 0) {
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: tenantName,
         routeName: route.name,
         serviceLabel: caller.serviceLabel,
@@ -171,7 +171,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
     const serviceLabel = caller.serviceLabel;
 
     if (!decision.allowed) {
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: tenantName,
         routeName: route.name,
         serviceLabel,
@@ -194,7 +194,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       // prettier-ignore
       log(LogLevel.warn, `request_invalid endpoint=chat_completions tenant=${tenantName} route=${route.name} reason=invalid_body detail=${validation.error ?? "invalid parameters"}`);
 
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: tenantName,
         routeName: route.name,
         serviceLabel,
@@ -230,7 +230,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
             finalize(decision.routeMeta.tenant, route.name, decision.estCostUsd, 0);
 
           const totalLatencyMs: number = Date.now() - requestStartMs;
-          recordCallAndAuditDecision(rt, {
+          recordCallAndAuditDecision(runtimeContext, {
             tenant: decision.routeMeta.tenant,
             routeName: route.name,
             serviceLabel,
@@ -301,7 +301,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
           reply.raw.end();
 
           if (route.policy) finalize(decision.routeMeta.tenant, route.name, decision.estCostUsd, latestResult.finalCostUsd);
-          recordCallAndAuditDecision(rt, {
+          recordCallAndAuditDecision(runtimeContext, {
             tenant: decision.routeMeta.tenant,
             routeName: route.name,
             serviceLabel,
@@ -338,7 +338,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       }
 
       if (route.policy) finalize(decision.routeMeta.tenant, route.name, decision.estCostUsd, providerResult.finalCostUsd);
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: decision.routeMeta.tenant,
         routeName: route.name,
         serviceLabel,
@@ -390,7 +390,7 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       return reply.code(200).send(providerResult.output);
     } catch (err) {
       // Provider error telemetry + audit
-      recordCallAndAuditProviderError(rt, {
+      recordCallAndAuditProviderError(runtimeContext, {
         tenant: decision.routeMeta.tenant,
         routeName: route.name,
         serviceLabel,
@@ -398,8 +398,8 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
         retryCount: (err as any)?.metadata?.retryCount ?? undefined,
       });
 
-      const e = err as any;
-      if (e?.provider === "openai" && (e?.status === 401 || e?.code === "invalid_api_key")) {
+      const error = err as any;
+      if (error?.provider === "openai" && (error?.status === 401 || error?.code === "invalid_api_key")) {
         // prettier-ignore
         log(LogLevel.warn, `provider_error endpoint=chat_completions tenant=${decision.routeMeta.tenant} route=${route.name} reason=invalid_openai_api_key`);
         return sendError(reply, "invalid_openai_api_key", { routeName });
@@ -408,9 +408,9 @@ export function registerInvokeRoutes(app: FastifyInstance): void {
       // prettier-ignore
       log(
         LogLevel.warn,
-        `provider_error endpoint=chat_completions tenant=${decision.routeMeta.tenant} route=${route.name} reason=upstream_error provider=OpenAI status=${e?.status ?? "unknown"} code=${e?.code ?? "unknown"} error_type=${e?.errorType ?? "unknown"} message=${(e?.message ?? "").toString().replace(/\s+/g, " ").slice(0, 300)}`
+        `provider_error endpoint=chat_completions tenant=${decision.routeMeta.tenant} route=${route.name} reason=upstream_error provider=OpenAI status=${error?.status ?? "unknown"} code=${error?.code ?? "unknown"} error_type=${error?.errorType ?? "unknown"} message=${(error?.message ?? "").toString().replace(/\s+/g, " ").slice(0, 300)}`
       );
-      return sendError(reply, "upstream_error", { providerName: "OpenAI", upstreamStatus: e?.status });
+      return sendError(reply, "upstream_error", { providerName: "OpenAI", upstreamStatus: error?.status });
     }
   });
 }

@@ -39,7 +39,7 @@ export type RouteCacheByName = Map<string, RouteCache>;
 // API responses
 
 export interface HealthResponse {
-  readonly ok: true;
+  readonly isValid: true;
 }
 
 

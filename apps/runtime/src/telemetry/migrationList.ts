@@ -9,24 +9,24 @@ export interface MigrationContext {
 
 export interface MigrationModule {
   readonly MIGRATION_VERSION: number;
-  up(db: Database, ctx: MigrationContext): void | Promise<void>;
+  up(database: Database, ctx: MigrationContext): void | Promise<void>;
 }
 
 const modules: readonly MigrationModule[] = [
   // 001
   {
     MIGRATION_VERSION: m001.MIGRATION_VERSION,
-    up: (db) => m001.up(db),
+    up: (database) => m001.up(database),
   },
   // 002
   {
     MIGRATION_VERSION: m002.MIGRATION_VERSION,
-    up: (db) => m002.up(db),
+    up: (database) => m002.up(database),
   },
   // 003
   {
     MIGRATION_VERSION: m003.MIGRATION_VERSION,
-    up: (db) => m003.up(db),
+    up: (database) => m003.up(database),
   },
 ];
 

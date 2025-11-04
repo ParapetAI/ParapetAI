@@ -6,8 +6,8 @@ export function computeDelayMs(attempt: number, baseMs: number, jitter: boolean)
   return Math.floor(Math.random() * max);
 }
 
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Math.floor(ms))));
+export function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Math.floor(milliseconds))));
 }
 
 

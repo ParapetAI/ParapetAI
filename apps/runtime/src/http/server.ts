@@ -40,7 +40,7 @@ export async function startHttpServer(port: number): Promise<RunningServer> {
 
 
   app.get("/health", async (_request, reply) => {
-    const response: APIResponse<HealthResponse> = { statusCode: 200, data: { ok: true } };
+    const response: APIResponse<HealthResponse> = { statusCode: 200, data: { isValid: true } };
 
     return reply.code(response.statusCode).send(response);
   });

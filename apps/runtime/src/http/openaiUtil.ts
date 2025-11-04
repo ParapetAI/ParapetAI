@@ -24,21 +24,21 @@ export function extractParams(
 export function selectRouteNameByModel(
   allowedRoutes: readonly string[],
   model: string,
-  rt: ReturnType<typeof getRuntimeContext>,
+  runtimeContext: ReturnType<typeof getRuntimeContext>,
   endpointType: EndpointType
 ): string | null {
   for (const name of allowedRoutes) {
-    const r = rt.routeByName.get(name);
-    if (!r) 
+    const route = runtimeContext.routeByName.get(name);
+    if (!route) 
       continue;
 
-    const et = r.provider.endpoint_type ?? "chat_completions";
+    const routeEndpointType = route.provider.endpoint_type ?? "chat_completions";
 
-    if (et !== endpointType) 
+    if (routeEndpointType !== endpointType) 
       continue;
     
-    if (r.provider.model === model) 
-      return r.name;
+    if (route.provider.model === model) 
+      return route.name;
   }
   return null;
 }
