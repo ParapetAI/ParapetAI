@@ -2,8 +2,8 @@ import { Database } from "better-sqlite3";
 
 export const MIGRATION_VERSION = 1 as const;
 
-export function up(db: Database): void {
-  db.exec(
+export function up(database: Database): void {
+  database.exec(
     [
       "CREATE TABLE IF NOT EXISTS telemetry_events (",
       "  ts INTEGER NOT NULL,",

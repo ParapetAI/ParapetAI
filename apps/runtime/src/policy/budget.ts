@@ -21,11 +21,11 @@ function setRouteMicros(route: string, micros: number): void {
 }
 
 export type CheckAndReserveResult = {
-  ok: true;
+  isValid: true;
   tenantBudgetBeforeUsd: number;
   routeBudgetBeforeUsd: number;
 } | {
-  ok: false;
+  isValid: false;
   reason: "budget_exceeded";
   tenantBudgetBeforeUsd: number;
   routeBudgetBeforeUsd: number;
@@ -49,7 +49,7 @@ export function checkAndReserve(
 
   if (wouldTenant > tenantCapMicros || wouldRoute > routeCapMicros) {
     return {
-      ok: false,
+      isValid: false,
       reason: "budget_exceeded",
       tenantBudgetBeforeUsd: tenantBeforeMicros / 1_000_000,
       routeBudgetBeforeUsd: routeBeforeMicros / 1_000_000,
@@ -59,7 +59,7 @@ export function checkAndReserve(
   setTenantMicros(tenant, wouldTenant);
   setRouteMicros(route, wouldRoute);
   return {
-    ok: true,
+    isValid: true,
     tenantBudgetBeforeUsd: tenantBeforeMicros / 1_000_000,
     routeBudgetBeforeUsd: routeBeforeMicros / 1_000_000,
   } as const;
@@ -75,11 +75,11 @@ export function finalize(tenant: string, route: string, estCostUsd: number, fina
 export function rebuildFromRows(rows: readonly TelemetryEvent[]): void {
   tenantSpentMicros.clear();
   routeSpentMicros.clear();
-  for (const r of rows) {
-    const usd = typeof r.final_cost_usd === "number" ? r.final_cost_usd : r.est_cost_usd;
+  for (const row of rows) {
+    const usd = typeof row.final_cost_usd === "number" ? row.final_cost_usd : row.est_cost_usd;
     const micros = Math.round(usd * 1_000_000);
-    setTenantMicros(r.tenant, getTenantMicros(r.tenant) + micros);
-    setRouteMicros(r.route, getRouteMicros(r.route) + micros);
+    setTenantMicros(row.tenant, getTenantMicros(row.tenant) + micros);
+    setRouteMicros(row.route, getRouteMicros(row.route) + micros);
   }
 }
 

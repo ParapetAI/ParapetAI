@@ -89,9 +89,9 @@ export async function bootstrapRuntime(): Promise<void> {
       32
     );
 
-    const db = new Database("/data/parapet-telemetry.db", { fileMustExist: false, readonly: false });
-    runMigrations(db, { telemetryKey: Buffer.from(telemetryKey) });
-    db.close();
+    const database = new Database("/data/parapet-telemetry.db", { fileMustExist: false, readonly: false });
+    runMigrations(database, { telemetryKey: Buffer.from(telemetryKey) });
+    database.close();
   } catch (err) {
     log(LogLevel.error, "Failed to run telemetry DB migrations; refusing to start");
     throw err instanceof Error ? err : new Error(String(err));

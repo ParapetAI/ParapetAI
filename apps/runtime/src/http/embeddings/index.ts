@@ -43,9 +43,9 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
       return sendError(reply, "invalid_body");
     }
 
-    const hasValidInput = typeof body.input === "string" || (Array.isArray(body.input) && body.input.length > 0 && body.input.every((v) => typeof v === "string"));
+    const hasValidInput = typeof body.input === "string" || (Array.isArray(body.input) && body.input.length > 0 && body.input.every((item) => typeof item === "string"));
     if (!hasValidInput) {
-      const rt = getRuntimeContext();
+      const runtimeContext = getRuntimeContext();
       const caller = getCallerContext(token);
 
       if (!caller) {
@@ -55,10 +55,10 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
       }
 
       const tenant = caller.tenant ?? "";
-      const routeName = selectRouteNameByModel(caller.allowedRoutes, body.model!, rt, "embeddings") ?? "";
+      const routeName = selectRouteNameByModel(caller.allowedRoutes, body.model!, runtimeContext, "embeddings") ?? "";
 
       if (routeName) {
-        recordCallAndAuditDecision(rt, {
+        recordCallAndAuditDecision(runtimeContext, {
           tenant: tenant,
           allowed: false,
           routeName: routeName,
@@ -73,7 +73,7 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
       return sendError(reply, "invalid_body");
     }
 
-    const rt = getRuntimeContext();
+    const runtimeContext = getRuntimeContext();
     const caller = getCallerContext(token);
     if (!caller) {
       // prettier-ignore
@@ -81,14 +81,14 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
       return sendError(reply, "invalid_parapet_api_key");
     }
 
-    const routeName = selectRouteNameByModel(caller.allowedRoutes, body.model, rt, "embeddings");
+    const routeName = selectRouteNameByModel(caller.allowedRoutes, body.model, runtimeContext, "embeddings");
     if (!routeName) {
       // prettier-ignore
       log(LogLevel.warn, `policy_block endpoint=embeddings tenant=${caller.tenant} reason=drift_violation model=${body.model}`);
       return sendError(reply, "drift_violation");
     }
 
-    const route = rt.routeByName.get(routeName);
+    const route = runtimeContext.routeByName.get(routeName);
     if (!route) {
       // prettier-ignore
       log(LogLevel.warn, `request_invalid endpoint=embeddings tenant=${caller.tenant} reason=unknown_route route=${routeName}`);
@@ -106,7 +106,7 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
     const serviceLabel = caller.serviceLabel;
 
     if (!decision.allowed) {
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: tenantName,
         routeName: route.name,
         serviceLabel,
@@ -126,7 +126,7 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
     if (!validation.valid) {
       // prettier-ignore
       log(LogLevel.warn, `request_invalid endpoint=embeddings tenant=${tenantName} route=${route.name} reason=invalid_body detail=${validation.error ?? "invalid parameters"}`);
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: tenantName,
         routeName: route.name,
         serviceLabel,
@@ -161,7 +161,7 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
             finalize(decision.routeMeta.tenant, route.name, decision.estCostUsd, 0);
 
           const totalLatencyMs: number = Date.now() - requestStartMs;
-          recordCallAndAuditDecision(rt, {
+          recordCallAndAuditDecision(runtimeContext, {
             tenant: decision.routeMeta.tenant,
             routeName: route.name,
             serviceLabel,
@@ -204,7 +204,7 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
       if (route.policy)
         finalize(decision.routeMeta.tenant, route.name, decision.estCostUsd, providerResult.finalCostUsd);
 
-      recordCallAndAuditDecision(rt, {
+      recordCallAndAuditDecision(runtimeContext, {
         tenant: decision.routeMeta.tenant,
         routeName: route.name,
         serviceLabel,
@@ -266,24 +266,24 @@ export function registerEmbeddingRoutes(app: FastifyInstance): void {
 
       return reply.code(200).send(responseBody);
     } catch (err) {
-      recordCallAndAuditProviderError(rt, {
+      recordCallAndAuditProviderError(runtimeContext, {
         tenant: decision.routeMeta.tenant,
         routeName: route.name,
         serviceLabel,
         estCostUsd: decision.estCostUsd,
       });
 
-      const e = err as any;
-      if (e?.provider === "openai" && (e?.status === 401 || e?.code === "invalid_api_key")) {
+      const error = err as any;
+      if (error?.provider === "openai" && (error?.status === 401 || error?.code === "invalid_api_key")) {
         // prettier-ignore
         log(LogLevel.warn, `provider_error endpoint=embeddings tenant=${decision.routeMeta.tenant} route=${route.name} reason=invalid_openai_api_key`);
         return sendError(reply, "invalid_openai_api_key", { routeName });
       }
 
       // prettier-ignore
-      log(LogLevel.warn, `provider_error endpoint=embeddings tenant=${decision.routeMeta.tenant} route=${route.name} reason=upstream_error provider=OpenAI status=${e?.status ?? "unknown"} code=${e?.code ?? "unknown"} error_type=${e?.errorType ?? "unknown"} message=${(e?.message ?? "").toString().replace(/\s+/g, " ").slice(0, 300)}`);
+      log(LogLevel.warn, `provider_error endpoint=embeddings tenant=${decision.routeMeta.tenant} route=${route.name} reason=upstream_error provider=OpenAI status=${error?.status ?? "unknown"} code=${error?.code ?? "unknown"} error_type=${error?.errorType ?? "unknown"} message=${(error?.message ?? "").toString().replace(/\s+/g, " ").slice(0, 300)}`);
       
-      return sendError(reply, "upstream_error", { providerName: "OpenAI", upstreamStatus: e?.status });
+      return sendError(reply, "upstream_error", { providerName: "OpenAI", upstreamStatus: error?.status });
     }
   });
 }

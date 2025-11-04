@@ -143,7 +143,7 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, inpu
 
   const estCostUsd = estimateCost(route.provider.type, route.provider.model, tokensIn, tokensOutGuess);
   const budget = checkAndReserve(tenant.name, route.name, estCostUsd, route.policy.budget_daily_usd, tenant.spend.daily_usd_cap);
-  if (!budget.ok)
+  if (!budget.isValid)
     return {
       allowed: false,
       reason: budget.reason,

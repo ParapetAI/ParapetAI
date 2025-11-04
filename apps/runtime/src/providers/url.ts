@@ -5,8 +5,8 @@ function trimTrailingSlash(url: string): string {
 }
 
 function hasFinalPath(url: string): boolean {
-  const u = url.toLowerCase();
-  return u.endsWith("/chat/completions") || u.endsWith("/embeddings");
+  const lowercaseUrl = url.toLowerCase();
+  return lowercaseUrl.endsWith("/chat/completions") || lowercaseUrl.endsWith("/embeddings");
 }
 
 function hasVersionSegment(url: string): boolean {

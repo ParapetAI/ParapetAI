@@ -99,24 +99,24 @@ function validateOpenAIParams(params: Record<string, unknown>, endpointType: End
     if (params.stop !== undefined) {
       const stop = params.stop as unknown;
       const isString = typeof stop === "string";
-      const isStringArray = Array.isArray(stop) && (stop as unknown[]).every((v) => typeof v === "string");
+      const isStringArray = Array.isArray(stop) && (stop as unknown[]).every((item) => typeof item === "string");
       if (!isString && !isStringArray) {
         return { valid: false, error: "stop must be a string or string[]" };
       }
     }
     if (params.n !== undefined) {
-      const n = Number(params.n);
-      if (!Number.isInteger(n) || n < 1) {
+      const nValue = Number(params.n);
+      if (!Number.isInteger(nValue) || nValue < 1) {
         return { valid: false, error: "n must be a positive integer" };
       }
     }
     if (params.logit_bias !== undefined) {
-      const lb = params.logit_bias as unknown;
-      if (lb == null || typeof lb !== "object" || Array.isArray(lb)) {
+      const logitBias = params.logit_bias as unknown;
+      if (logitBias == null || typeof logitBias !== "object" || Array.isArray(logitBias)) {
         return { valid: false, error: "logit_bias must be an object of token->bias" };
       }
-      for (const v of Object.values(lb as Record<string, unknown>)) {
-        const num = Number(v);
+      for (const biasValue of Object.values(logitBias as Record<string, unknown>)) {
+        const num = Number(biasValue);
         if (!Number.isFinite(num) || num < -100 || num > 100) {
           return { valid: false, error: "logit_bias values must be numbers in [-100, 100]" };
         }
@@ -140,17 +140,17 @@ function validateOpenAIParams(params: Record<string, unknown>, endpointType: End
       }
     }
     if (params.response_format !== undefined) {
-      const rf = params.response_format as unknown;
-      if (rf == null || typeof rf !== "object" || Array.isArray(rf)) {
+      const responseFormat = params.response_format as unknown;
+      if (responseFormat == null || typeof responseFormat !== "object" || Array.isArray(responseFormat)) {
         return { valid: false, error: "response_format must be an object" };
       }
-      const type = (rf as Record<string, unknown>).type;
+      const type = (responseFormat as Record<string, unknown>).type;
       if (type !== "json_object" && type !== "json_schema" && type !== "text") {
         return { valid: false, error: "response_format.type must be 'text', 'json_object', or 'json_schema'" };
       }
       if (type === "json_schema") {
-        const js = (rf as Record<string, unknown>).json_schema;
-        if (js == null || typeof js !== "object" || Array.isArray(js)) {
+        const jsonSchema = (responseFormat as Record<string, unknown>).json_schema;
+        if (jsonSchema == null || typeof jsonSchema !== "object" || Array.isArray(jsonSchema)) {
           return { valid: false, error: "response_format.json_schema must be an object when type is 'json_schema'" };
         }
       }
@@ -161,10 +161,10 @@ function validateOpenAIParams(params: Record<string, unknown>, endpointType: End
       }
     }
     if (params.tool_choice !== undefined) {
-      const tc = params.tool_choice as unknown;
-      const tcStrOk = tc === "none" || tc === "auto" || tc === "required";
-      const tcObjOk = typeof tc === "object" && tc != null;
-      if (!tcStrOk && !tcObjOk) {
+      const toolChoice = params.tool_choice as unknown;
+      const isToolChoiceString = toolChoice === "none" || toolChoice === "auto" || toolChoice === "required";
+      const isToolChoiceObject = typeof toolChoice === "object" && toolChoice != null;
+      if (!isToolChoiceString && !isToolChoiceObject) {
         return { valid: false, error: "tool_choice must be 'none' | 'auto' | 'required' | object" };
       }
     }
@@ -172,28 +172,28 @@ function validateOpenAIParams(params: Record<string, unknown>, endpointType: End
       return { valid: false, error: "parallel_tool_calls must be a boolean" };
     }
     if (params.service_tier !== undefined) {
-      const st = params.service_tier;
-      const ok = st === "auto" || st === "default" || st === "flex" || st === "scale" || st === "priority";
-      if (!ok) return { valid: false, error: "service_tier must be one of: auto, default, flex, scale, priority" };
+      const serviceTier = params.service_tier;
+      const isValidServiceTier = serviceTier === "auto" || serviceTier === "default" || serviceTier === "flex" || serviceTier === "scale" || serviceTier === "priority";
+      if (!isValidServiceTier) return { valid: false, error: "service_tier must be one of: auto, default, flex, scale, priority" };
     }
     if (params.store !== undefined && typeof params.store !== "boolean") {
       return { valid: false, error: "store must be a boolean" };
     }
     if (params.stream_options !== undefined) {
-      const so = params.stream_options as unknown;
-      if (so == null || typeof so !== "object" || Array.isArray(so)) {
+      const streamOptions = params.stream_options as unknown;
+      if (streamOptions == null || typeof streamOptions !== "object" || Array.isArray(streamOptions)) {
         return { valid: false, error: "stream_options must be an object" };
       }
     }
     if (params.modalities !== undefined) {
       const mods = params.modalities as unknown;
-      if (!Array.isArray(mods) || !(mods as unknown[]).every((m) => m === "text" || m === "audio")) {
+      if (!Array.isArray(mods) || !(mods as unknown[]).every((modality) => modality === "text" || modality === "audio")) {
         return { valid: false, error: "modalities must be an array containing 'text' and/or 'audio'" };
       }
     }
     if (params.metadata !== undefined) {
-      const md = params.metadata as unknown;
-      if (md == null || typeof md !== "object" || Array.isArray(md)) {
+      const metadata = params.metadata as unknown;
+      if (metadata == null || typeof metadata !== "object" || Array.isArray(metadata)) {
         return { valid: false, error: "metadata must be an object" };
       }
     }
@@ -217,8 +217,8 @@ function validateOpenAIParams(params: Record<string, unknown>, endpointType: End
       }
     }
     if (params.encoding_format !== undefined) {
-      const ef = params.encoding_format;
-      if (ef !== "float" && ef !== "base64") {
+      const encodingFormat = params.encoding_format;
+      if (encodingFormat !== "float" && encodingFormat !== "base64") {
         return { valid: false, error: "encoding_format must be 'float' or 'base64'" };
       }
     }
