@@ -1,30 +1,51 @@
 import { OpenAI } from "openai";
-import { ChatCompletionCreateParamsNonStreaming } from "openai/resources/index.mjs";
+import { ChatCompletionChunk, ChatCompletionCreateParamsNonStreaming } from "openai/resources/index.mjs";
+import { loadEnvFile } from "node:process";
+import fs from "node:fs";
+import path from "node:path";
+
+const localEnv = path.resolve('.env');
+
+if (fs.existsSync(localEnv)) {
+  loadEnvFile(localEnv);
+} else {
+  console.error("Local environment file not found");
+  process.exit(1);
+}
 
 const baseUrl = 'http://127.0.0.1:8000/v1/';
-const apiKey = '{service-key}';
+const openAiWithPolicy = process.env["PARAPET_SERVICE_OPENAI_APP_TOKEN"];
+const openAiNoPolicy = process.env["PARAPET_SERVICE_OPENAI_APP_NO_POLICY_TOKEN"];
 
 const openai = new OpenAI({
   baseURL: baseUrl,
-  apiKey: apiKey,
+  apiKey: openAiWithPolicy,
 });
 
 setImmediate(async () => {
+  const streaming = false;
   console.log("Chat completions test...");
   const chatResponse = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: [{ role: "user", content: "Hello, how are you?" }],
-    // reasoning_effort: "low",
-    // test_fake_param: 'test' // This should be rejected by the runtime
-  } as unknown as ChatCompletionCreateParamsNonStreaming);
-  console.log(JSON.stringify(chatResponse, null, 2));
-
-  console.log("Embeddings test...");
-  const embeddingsResponse = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: "Hello, how are you?",
+    messages: [{ role: "user", content: "Hello, how are you? test@gmail.com is my email isnt that cool!" }],
+    stream: streaming,
   });
-  console.log(JSON.stringify(embeddingsResponse, null, 2));
+  
+  if (streaming) {
+    console.log("Streaming chunks:");
+    for await (const chunk of chatResponse as unknown as AsyncIterable<ChatCompletionChunk>) {
+      console.log(JSON.stringify(chunk, null, 2));
+    }
+  } else {
+    console.log(JSON.stringify(chatResponse, null, 2));
+  }
+
+  // console.log("Embeddings test...");
+  // const embeddingsResponse = await openai.embeddings.create({
+  //   model: "text-embedding-3-small",
+  //   input: "Hello, how are you?",
+  // });
+  // console.log(JSON.stringify(embeddingsResponse, null, 2));
 });
 
 /*

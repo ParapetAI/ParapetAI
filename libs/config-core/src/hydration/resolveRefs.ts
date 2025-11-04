@@ -78,10 +78,12 @@ export async function resolveRefs(spec: ParapetSpec, opts: ResolveRefsOptions = 
   }
 
   const routes: HydratedRoute[] = [];
-  for (const r of spec.routes) {
-    const enabled = r.policy.drift_detection?.enabled ?? r.policy.drift_strict;
-    const sensitivity = r.policy.drift_detection?.sensitivity ?? "medium";
-    const costThreshold = r.policy.drift_detection?.cost_anomaly_threshold ?? getCostThreshold(sensitivity);
+  for (const route of spec.routes) {
+    const hasPolicy = Boolean(route.policy);
+    const rawPolicy = route.policy;
+    const enabled = rawPolicy?.drift_detection?.enabled ?? rawPolicy?.drift_strict ?? false;
+    const sensitivity = rawPolicy?.drift_detection?.sensitivity ?? "medium";
+    const costThreshold = rawPolicy?.drift_detection?.cost_anomaly_threshold ?? getCostThreshold(sensitivity);
 
     const driftDetection = {
       enabled,
@@ -90,9 +92,9 @@ export async function resolveRefs(spec: ParapetSpec, opts: ResolveRefsOptions = 
     };
 
     let hydratedWebhook: HydratedRoute["webhook"] | undefined;
-    if ((r as RouteSpec).webhook) {
-      const wh = (r as RouteSpec).webhook as NonNullable<RouteSpec["webhook"]>;
-      const secret = await resolveRef(wh.secret_ref, `webhook secret for route ${r.name}`);
+    if ((route as RouteSpec).webhook) {
+      const wh = (route as RouteSpec).webhook as NonNullable<RouteSpec["webhook"]>;
+      const secret = await resolveRef(wh.secret_ref, `webhook secret for route ${route.name}`);
       const includeSnippet = wh.include_prompt_snippet === true;
       const events = {
         policy_decisions: wh.events?.policy_decisions !== false,
@@ -107,47 +109,68 @@ export async function resolveRefs(spec: ParapetSpec, opts: ResolveRefsOptions = 
       };
     }
 
-    if (r.provider.type === "local") {
+    const hydratedCache = {
+      enabled: route.cache?.enabled === true,
+      mode: "exact" as const,
+      ttl_ms: route.cache?.ttl_ms ?? 30000,
+      max_entries: route.cache?.max_entries ?? 5000,
+      include_params: route.cache?.include_params !== false,
+    };
+
+    if (route.provider.type === "local") {
       routes.push({
-        name: r.name,
-        tenant: r.tenant,
+        name: route.name,
+        tenant: route.tenant,
         provider: {
-          type: r.provider.type,
-          model: r.provider.model,
-          endpoint_type: r.provider.endpoint_type ?? "chat_completions",
-          endpoint: r.provider.endpoint,
-          default_params: r.provider.default_params,
+          type: route.provider.type,
+          model: route.provider.model,
+          endpoint_type: route.provider.endpoint_type ?? "chat_completions",
+          endpoint: route.provider.endpoint,
+          default_params: route.provider.default_params,
         },
-        policy: {
-          max_tokens_in: r.policy.max_tokens_in,
-          max_tokens_out: r.policy.max_tokens_out,
-          budget_daily_usd: r.policy.budget_daily_usd,
-          drift_strict: r.policy.drift_strict,
-          drift_detection: driftDetection,
-          redaction: { mode: r.policy.redaction.mode, patterns: r.policy.redaction.patterns },
-        },
+        ...(hasPolicy
+          ? {
+              policy: {
+                max_tokens_in: rawPolicy!.max_tokens_in,
+                max_tokens_out: rawPolicy!.max_tokens_out,
+                budget_daily_usd: rawPolicy!.budget_daily_usd,
+                drift_strict: rawPolicy!.drift_strict,
+                drift_detection: driftDetection,
+                redaction: { mode: rawPolicy!.redaction.mode, patterns: rawPolicy!.redaction.patterns },
+              },
+            }
+          : {}),
+        retries: route.retries,
+        cache: hydratedCache,
         webhook: hydratedWebhook,
       });
     } else {
-      const key = await resolveRef(r.provider.provider_key_ref as string, `provider_key for route ${r.name}`);
+      const key = await resolveRef(route.provider.provider_key_ref as string, `provider_key for route ${route.name}`);
       routes.push({
-        name: r.name,
-        tenant: r.tenant,
+        name: route.name,
+        tenant: route.tenant,
         provider: {
-          type: r.provider.type,
-          model: r.provider.model,
-          endpoint_type: r.provider.endpoint_type ?? "chat_completions",
+          type: route.provider.type,
+          model: route.provider.model,
+          endpoint_type: route.provider.endpoint_type ?? "chat_completions",
           provider_key: key,
-          default_params: r.provider.default_params,
+          endpoint: route.provider.endpoint,
+          default_params: route.provider.default_params,
         },
-        policy: {
-          max_tokens_in: r.policy.max_tokens_in,
-          max_tokens_out: r.policy.max_tokens_out,
-          budget_daily_usd: r.policy.budget_daily_usd,
-          drift_strict: r.policy.drift_strict,
-          drift_detection: driftDetection,
-          redaction: { mode: r.policy.redaction.mode, patterns: r.policy.redaction.patterns },
-        },
+        ...(hasPolicy
+          ? {
+              policy: {
+                max_tokens_in: rawPolicy!.max_tokens_in,
+                max_tokens_out: rawPolicy!.max_tokens_out,
+                budget_daily_usd: rawPolicy!.budget_daily_usd,
+                drift_strict: rawPolicy!.drift_strict,
+                drift_detection: driftDetection,
+                redaction: { mode: rawPolicy!.redaction.mode, patterns: rawPolicy!.redaction.patterns },
+              },
+            }
+          : {}),
+        retries: route.retries,
+        cache: hydratedCache,
         webhook: hydratedWebhook,
       });
     }

@@ -47,89 +47,164 @@ export function validateSpec(spec: ParapetSpec): ValidationResult {
   // Routes
   const routeNames = new Set<string>();
   for (let i = 0; i < spec.routes.length; i++) {
-    const r: RouteSpec = spec.routes[i] as RouteSpec;
-    if (!r || typeof r.name !== "string" || r.name.trim().length === 0) {
+    const routeSpec: RouteSpec = spec.routes[i] as RouteSpec;
+
+    if (!routeSpec || typeof routeSpec.name !== "string" || routeSpec.name.trim().length === 0) {
       issues.push({ path: `routes[${i}].name`, message: "name is required" });
-    } else if (routeNames.has(r.name)) {
+    } else if (routeNames.has(routeSpec.name)) {
       issues.push({ path: `routes[${i}].name`, message: "duplicate route name" });
     } else {
-      routeNames.add(r.name);
+      routeNames.add(routeSpec.name);
     }
-    if (!r?.tenant || !tenantNames.has(r.tenant)) {
+
+    if (!routeSpec?.tenant || !tenantNames.has(routeSpec.tenant)) {
       issues.push({ path: `routes[${i}].tenant`, message: "tenant must reference an existing tenant" });
     }
-    const p = r?.provider as RouteSpec["provider"];
-    if (!p || (p.type !== "openai" && p.type !== "local")) {
+
+    const provider = routeSpec?.provider as RouteSpec["provider"];
+    if (!provider || (provider.type !== "openai" && provider.type !== "local")) {
       issues.push({ path: `routes[${i}].provider.type`, message: "provider.type must be one of: openai, local" });
     }
-    if (!p?.model || p.model.trim().length === 0) {
+    if (!provider?.model || provider.model.trim().length === 0) {
       issues.push({ path: `routes[${i}].provider.model`, message: "provider.model is required" });
     }
-    if (p?.type === "local") {
-      if (!p?.endpoint || p.endpoint.trim().length === 0) {
+    if (provider?.type === "local") {
+      if (!provider?.endpoint || provider.endpoint.trim().length === 0) {
         issues.push({ path: `routes[${i}].provider.endpoint`, message: "endpoint is required for local provider" });
       }
     } else {
-      if (!p?.provider_key_ref || p.provider_key_ref.trim().length === 0) {
+      if (!provider?.provider_key_ref || provider.provider_key_ref.trim().length === 0) {
         issues.push({ path: `routes[${i}].provider.provider_key_ref`, message: "provider_key_ref is required for non-local providers" });
       }
+      if (!provider?.endpoint || provider.endpoint.trim().length === 0) {
+        issues.push({ path: `routes[${i}].provider.endpoint`, message: "endpoint is required for non-local providers" });
+      }
     }
-    const pol = r?.policy;
-    if (!pol) {
-      issues.push({ path: `routes[${i}].policy`, message: "policy is required" });
-    } else {
-      if (!Number.isFinite(pol.max_tokens_in) || pol.max_tokens_in < 0) issues.push({ path: `routes[${i}].policy.max_tokens_in`, message: "must be a non-negative number" });
-      if (!Number.isFinite(pol.max_tokens_out) || pol.max_tokens_out < 0) issues.push({ path: `routes[${i}].policy.max_tokens_out`, message: "must be a non-negative number" });
-      if (!Number.isFinite(pol.budget_daily_usd) || pol.budget_daily_usd < 0) issues.push({ path: `routes[${i}].policy.budget_daily_usd`, message: "must be a non-negative number" });
-      if (typeof pol.drift_strict !== "boolean") issues.push({ path: `routes[${i}].policy.drift_strict`, message: "must be boolean" });
-      const dd = pol.drift_detection;
-      if (dd !== undefined) {
-        if (dd.enabled !== undefined && typeof dd.enabled !== "boolean") {
+
+    const policy = routeSpec?.policy;
+    if (policy) {
+      if (!Number.isFinite(policy.max_tokens_in) || policy.max_tokens_in < 0) issues.push({ path: `routes[${i}].policy.max_tokens_in`, message: "must be a non-negative number" });
+      if (!Number.isFinite(policy.max_tokens_out) || policy.max_tokens_out < 0) issues.push({ path: `routes[${i}].policy.max_tokens_out`, message: "must be a non-negative number" });
+      if (!Number.isFinite(policy.budget_daily_usd) || policy.budget_daily_usd < 0) issues.push({ path: `routes[${i}].policy.budget_daily_usd`, message: "must be a non-negative number" });
+      if (typeof policy.drift_strict !== "boolean") issues.push({ path: `routes[${i}].policy.drift_strict`, message: "must be boolean" });
+      const driftDetection = policy.drift_detection;
+      if (driftDetection !== undefined) {
+        if (driftDetection.enabled !== undefined && typeof driftDetection.enabled !== "boolean") {
           issues.push({ path: `routes[${i}].policy.drift_detection.enabled`, message: "must be boolean" });
         }
-        if (dd.sensitivity !== undefined) {
-          if (dd.sensitivity !== "low" && dd.sensitivity !== "medium" && dd.sensitivity !== "high") {
+        if (driftDetection.sensitivity !== undefined) {
+          if (driftDetection.sensitivity !== "low" && driftDetection.sensitivity !== "medium" && driftDetection.sensitivity !== "high") {
             issues.push({ path: `routes[${i}].policy.drift_detection.sensitivity`, message: "must be one of: low, medium, high" });
           }
         }
-        if (dd.cost_anomaly_threshold !== undefined) {
-          if (!Number.isFinite(dd.cost_anomaly_threshold) || dd.cost_anomaly_threshold < 0 || dd.cost_anomaly_threshold > 1) {
+        if (driftDetection.cost_anomaly_threshold !== undefined) {
+          if (!Number.isFinite(driftDetection.cost_anomaly_threshold) || driftDetection.cost_anomaly_threshold < 0 || driftDetection.cost_anomaly_threshold > 1) {
             issues.push({ path: `routes[${i}].policy.drift_detection.cost_anomaly_threshold`, message: "must be a number between 0 and 1" });
           }
         }
       }
-      const red = pol.redaction;
-      if (!red) {
+
+      const redaction = policy.redaction;
+      if (!redaction) {
         issues.push({ path: `routes[${i}].policy.redaction`, message: "redaction is required" });
       } else {
-        if (red.mode !== "warn" && red.mode !== "block" && red.mode !== "off") {
+        if (redaction.mode !== "warn" && redaction.mode !== "block" && redaction.mode !== "off") {
           issues.push({ path: `routes[${i}].policy.redaction.mode`, message: "must be one of: warn, block, off" });
         }
-        if (!Array.isArray(red.patterns)) {
+        if (!Array.isArray(redaction.patterns)) {
           issues.push({ path: `routes[${i}].policy.redaction.patterns`, message: "patterns must be an array" });
         }
       }
     }
-    const wh = (r as RouteSpec).webhook as RouteSpec["webhook"] | undefined;
-    if (wh !== undefined) {
-      if (!wh || typeof wh.url !== "string" || wh.url.trim().length === 0) {
+
+    // Cache (optional)
+    const cache = routeSpec.cache as RouteSpec["cache"] | undefined;
+    if (cache !== undefined) {
+      const base = `routes[${i}].cache`;
+      if (cache.enabled !== undefined && typeof cache.enabled !== "boolean") {
+        issues.push({ path: `${base}.enabled`, message: "must be boolean" });
+      }
+      if (cache.mode !== undefined && cache.mode !== "exact") {
+        issues.push({ path: `${base}.mode`, message: "must be \"exact\"" });
+      }
+      if (cache.ttl_ms !== undefined && (!Number.isFinite(cache.ttl_ms) || cache.ttl_ms < 0)) {
+        issues.push({ path: `${base}.ttl_ms`, message: "must be a non-negative number" });
+      }
+      if (cache.max_entries !== undefined && (!Number.isFinite(cache.max_entries) || cache.max_entries < 1)) {
+        issues.push({ path: `${base}.max_entries`, message: "must be a positive integer" });
+      }
+      if (cache.include_params !== undefined && typeof cache.include_params !== "boolean") {
+        issues.push({ path: `${base}.include_params`, message: "must be boolean" });
+      }
+    }
+
+    // Retries at route level (optional)
+    const retries = (routeSpec as RouteSpec).retries as {
+      max_attempts?: number;
+      base_ms?: number;
+      jitter?: boolean;
+      retry_on?: readonly number[];
+      max_elapsed_ms?: number;
+    } | undefined;
+    if (retries !== undefined) {
+      const pathBase = `routes[${i}].retries`;
+      const requiredFields: Array<keyof typeof retries> = [
+        "max_attempts",
+        "base_ms",
+        "jitter",
+        "retry_on",
+        "max_elapsed_ms",
+      ];
+      for (const f of requiredFields) {
+        if (retries[f] === undefined) {
+          issues.push({ path: `${pathBase}.${String(f)}`, message: "is required" });
+        }
+      }
+      if (typeof retries.max_attempts !== "number" || retries.max_attempts < 2 || retries.max_attempts > 5) {
+        issues.push({ path: `${pathBase}.max_attempts`, message: "must be a number between 2 and 5" });
+      }
+      if (typeof retries.base_ms !== "number" || retries.base_ms < 100 || retries.base_ms > 1000) {
+        issues.push({ path: `${pathBase}.base_ms`, message: "must be a number between 100 and 1000" });
+      }
+      if (typeof retries.jitter !== "boolean") {
+        issues.push({ path: `${pathBase}.jitter`, message: "must be boolean" });
+      }
+      const allowedStatuses = new Set([429, 500, 502, 503, 504]);
+      if (!Array.isArray(retries.retry_on) || retries.retry_on.length === 0) {
+        issues.push({ path: `${pathBase}.retry_on`, message: "must be a non-empty array of HTTP statuses" });
+      } else {
+        for (let j = 0; j < retries.retry_on.length; j++) {
+          const code = retries.retry_on[j];
+          if (typeof code !== "number" || !allowedStatuses.has(code)) {
+            issues.push({ path: `${pathBase}.retry_on[${j}]`, message: "must be one of: 429, 500, 502, 503, 504" });
+          }
+        }
+      }
+      if (typeof retries.max_elapsed_ms !== "number" || retries.max_elapsed_ms < (retries.base_ms ?? 0)) {
+        issues.push({ path: `${pathBase}.max_elapsed_ms`, message: "must be >= base_ms" });
+      }
+    }
+
+    const webhook = (routeSpec as RouteSpec).webhook as RouteSpec["webhook"] | undefined;
+    if (webhook !== undefined) {
+      if (!webhook || typeof webhook.url !== "string" || webhook.url.trim().length === 0) {
         issues.push({ path: `routes[${i}].webhook.url`, message: "url is required and must be a non-empty string" });
       }
-      if (!wh || typeof wh.secret_ref !== "string" || wh.secret_ref.trim().length === 0) {
+      if (!webhook || typeof webhook.secret_ref !== "string" || webhook.secret_ref.trim().length === 0) {
         issues.push({ path: `routes[${i}].webhook.secret_ref`, message: "secret_ref is required and must be a non-empty string" });
       }
-      if (wh.include_prompt_snippet !== undefined && typeof wh.include_prompt_snippet !== "boolean") {
+      if (webhook.include_prompt_snippet !== undefined && typeof webhook.include_prompt_snippet !== "boolean") {
         issues.push({ path: `routes[${i}].webhook.include_prompt_snippet`, message: "must be boolean" });
       }
-      if (wh.events !== undefined) {
-        const ev = wh.events!;
-        if (ev.policy_decisions !== undefined && typeof ev.policy_decisions !== "boolean") {
+      if (webhook.events !== undefined) {
+        const events = webhook.events!;
+        if (events.policy_decisions !== undefined && typeof events.policy_decisions !== "boolean") {
           issues.push({ path: `routes[${i}].webhook.events.policy_decisions`, message: "must be boolean" });
         }
-        if (ev.request_errors !== undefined && typeof ev.request_errors !== "boolean") {
+        if (events.request_errors !== undefined && typeof events.request_errors !== "boolean") {
           issues.push({ path: `routes[${i}].webhook.events.request_errors`, message: "must be boolean" });
         }
-        if (ev.provider_errors !== undefined && typeof ev.provider_errors !== "boolean") {
+        if (events.provider_errors !== undefined && typeof events.provider_errors !== "boolean") {
           issues.push({ path: `routes[${i}].webhook.events.provider_errors`, message: "must be boolean" });
         }
       }
@@ -139,23 +214,23 @@ export function validateSpec(spec: ParapetSpec): ValidationResult {
   // Services
   const serviceLabels = new Set<string>();
   for (let i = 0; i < spec.services.length; i++) {
-    const s: ServiceSpec = spec.services[i] as ServiceSpec;
-    if (!s || typeof s.label !== "string" || s.label.trim().length === 0) {
+    const serviceSpec: ServiceSpec = spec.services[i] as ServiceSpec;
+    if (!serviceSpec || typeof serviceSpec.label !== "string" || serviceSpec.label.trim().length === 0) {
       issues.push({ path: `services[${i}].label`, message: "label is required" });
-    } else if (serviceLabels.has(s.label)) {
+    } else if (serviceLabels.has(serviceSpec.label)) {
       issues.push({ path: `services[${i}].label`, message: "duplicate service label" });
     } else {
-      serviceLabels.add(s.label);
+      serviceLabels.add(serviceSpec.label);
     }
-    if (!s?.tenant || !tenantNames.has(s.tenant)) {
+    if (!serviceSpec?.tenant || !tenantNames.has(serviceSpec.tenant)) {
       issues.push({ path: `services[${i}].tenant`, message: "tenant must reference an existing tenant" });
     }
-    if (!Array.isArray(s?.allowed_routes)) {
+    if (!Array.isArray(serviceSpec?.allowed_routes)) {
       issues.push({ path: `services[${i}].allowed_routes`, message: "allowed_routes must be an array" });
     } else {
-      for (let j = 0; j < s.allowed_routes.length; j++) {
-        const rn = s.allowed_routes[j];
-        if (!routeNames.has(rn)) {
+      for (let j = 0; j < serviceSpec.allowed_routes.length; j++) {
+        const routeName = serviceSpec.allowed_routes[j];
+        if (!routeNames.has(routeName)) {
           issues.push({ path: `services[${i}].allowed_routes[${j}]`, message: "must reference an existing route name" });
         }
       }

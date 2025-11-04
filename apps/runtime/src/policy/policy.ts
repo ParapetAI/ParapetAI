@@ -16,16 +16,44 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, inpu
   const runtime = getRuntimeContext();
 
   const caller = getCallerContext(serviceKey);
-  if (!caller) return { allowed: false, reason: "unauthorized" } as const;
+  if (!caller) 
+    return { allowed: false, reason: "unauthorized" } as const;
 
-  if (!caller.allowedRoutes.includes(routeName)) return { allowed: false, reason: "not_allowed" } as const;
+  if (!caller.allowedRoutes.includes(routeName)) 
+    return { allowed: false, reason: "not_allowed" } as const;
 
   const route = runtime.routeByName.get(routeName);
-  if (!route) return { allowed: false, reason: "unknown_route" } as const;
+  if (!route) 
+    return { allowed: false, reason: "unknown_route" } as const;
 
-  if (route.tenant !== caller.tenant) return { allowed: false, reason: "tenant_mismatch" } as const;
+  if (route.tenant !== caller.tenant) 
+    return { allowed: false, reason: "tenant_mismatch" } as const;
 
   const endpointType = route.provider.endpoint_type ?? "chat_completions";
+
+  // No policy → passthrough: no redaction, no budget reservation, no drift enforcement
+  if (!route.policy) {
+    let tokensIn = 0;
+
+    if (endpointType === "embeddings") {
+      const inputText = Array.isArray(input.input) ? input.input.join("\n") : (input.input ?? "");
+      tokensIn = estimateTokens(inputText);
+    } else {
+      const messagesText = input.messages?.map((m) => m.content).join("\n") ?? "";
+      tokensIn = estimateTokens(messagesText);
+    }
+
+    return {
+      allowed: true,
+      sanitizedMessages: input.messages,
+      sanitizedInput: input.input,
+      routeMeta: { tenant: route.tenant, provider: route.provider.type, model: route.provider.model, routeName },
+      budgetBeforeUsd: 0,
+      estCostUsd: estimateCost(route.provider.type, route.provider.model, tokensIn, endpointType === "embeddings" ? 0 : Math.max(1, Math.floor(tokensIn * 0.25))),
+      redactionApplied: false,
+      driftStrict: false,
+    } as const;
+  }
 
   const defaultParams: Readonly<Record<string, unknown>> | undefined = route.provider.default_params;
   const requestParams: Readonly<Record<string, unknown>> = input.params ?? {};
@@ -34,6 +62,7 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, inpu
   const enforcedParamsRecord = enforcedParams as Record<string, unknown>;
   const maxTokensRaw = enforcedParamsRecord.max_tokens;
   let maxTokensCap = route.policy.max_tokens_out;
+  
   if (typeof maxTokensRaw === "number") {
     maxTokensCap = Math.max(0, Math.floor(maxTokensRaw));
   } else if (typeof maxTokensRaw === "string") {
@@ -56,7 +85,8 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, inpu
     tokensIn = estimateTokens(messagesText);
   }
   
-  if (tokensIn > route.policy.max_tokens_in) return { allowed: false, reason: "max_tokens_in_exceeded" } as const;
+  if (tokensIn > route.policy.max_tokens_in) 
+    return { allowed: false, reason: "max_tokens_in_exceeded" } as const;
   
   const maxTokensOut = route.policy.max_tokens_out;
   const tokensOutGuess = endpointType === "embeddings"
@@ -88,9 +118,12 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, inpu
     if (!input.messages || input.messages.length === 0) {
       return { allowed: false, reason: "invalid_body" } as const;
     }
+
     const messagesText = input.messages.map((m) => m.content).join("\n");
     const redactionResult = redact(messagesText, redactionMode, redactionPatterns);
-    if ("blocked" in redactionResult) return { allowed: false, reason: redactionResult.reason } as const;
+
+    if ("blocked" in redactionResult) 
+      return { allowed: false, reason: redactionResult.reason } as const;
     
     if (redactionResult.applied) {
       const parts = redactionResult.output.split("\n");
@@ -105,7 +138,8 @@ export async function evaluatePolicy(serviceKey: string, routeName: string, inpu
   }
 
   const tenant = runtime.tenantByName.get(route.tenant);
-  if (!tenant) return { allowed: false, reason: "unknown_tenant" } as const;
+  if (!tenant) 
+    return { allowed: false, reason: "unknown_tenant" } as const;
 
   const estCostUsd = estimateCost(route.provider.type, route.provider.model, tokensIn, tokensOutGuess);
   const budget = checkAndReserve(tenant.name, route.name, estCostUsd, route.policy.budget_daily_usd, tenant.spend.daily_usd_cap);

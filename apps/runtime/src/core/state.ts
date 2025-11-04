@@ -1,5 +1,6 @@
 import type { HydratedConfig, HydratedRoute, HydratedTenant, HydratedService } from "@parapetai/config-core";
 import { InMemoryVault } from "../vault";
+import { RouteCacheByName } from "./types";
 
 export interface ServiceCallerContext {
   readonly serviceLabel: string;
@@ -15,6 +16,7 @@ export interface RuntimeContext {
   readonly routeByName: ReadonlyMap<string, HydratedRoute>;
   readonly tenantByName: ReadonlyMap<string, HydratedTenant>;
   readonly serviceKeyToContext: ReadonlyMap<string, ServiceCallerContext>;
+  readonly routeCacheByName?: RouteCacheByName;
 }
 
 let runtimeContext: RuntimeContext | undefined;

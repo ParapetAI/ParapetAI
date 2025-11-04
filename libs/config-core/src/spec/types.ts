@@ -28,7 +28,7 @@ export interface RouteSpec {
     readonly endpoint?: string; // required for local provider
     readonly default_params?: Readonly<Record<string, unknown>>; // route-level parameter defaults
   };
-  readonly policy: {
+  readonly policy?: {
     readonly max_tokens_in: number;
     readonly max_tokens_out: number;
     readonly budget_daily_usd: number;
@@ -42,6 +42,20 @@ export interface RouteSpec {
       readonly mode: "warn" | "block" | "off";
       readonly patterns: readonly string[];
     };
+  };
+  readonly retries?: {
+    readonly max_attempts: number; // 2..5
+    readonly base_ms: number; // 100..1000
+    readonly jitter: boolean; // full jitter when true
+    readonly retry_on: readonly number[]; // subset of [429,500,502,503,504]
+    readonly max_elapsed_ms: number; // >= base_ms
+  };
+  readonly cache?: {
+    readonly enabled?: boolean;
+    readonly mode?: "exact"; // reserved for future semantic modes
+    readonly ttl_ms?: number; // default: 30000
+    readonly max_entries?: number; // default: 5000
+    readonly include_params?: boolean; // default: true
   };
   readonly webhook?: {
     readonly url: string;

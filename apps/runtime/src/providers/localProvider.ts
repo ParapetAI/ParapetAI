@@ -1,5 +1,6 @@
 import type { ProviderAdapter, LlmCallInput, LlmCallOutput } from "./types";
 import { estimateTokens } from "../util/cost";
+import { buildOpenAICompatibleUrl } from "./url";
 
 interface OpenAICompatibleResponse {
   model?: string;
@@ -36,7 +37,7 @@ export const localProvider: ProviderAdapter = {
     }
 
     const start = Date.now();
-    const url = input.endpoint;
+    const url = buildOpenAICompatibleUrl(input.endpoint, input.endpointType);
 
     const requestBody: Record<string, unknown> = {
       model: input.model,
@@ -77,6 +78,7 @@ export const localProvider: ProviderAdapter = {
             controller.close();
             return;
           }
+
           const decoder = new TextDecoder();
           let buffer = "";
           let tokensIn = 0;
@@ -92,12 +94,18 @@ export const localProvider: ProviderAdapter = {
               buffer = lines.pop() ?? "";
 
               for (const line of lines) {
-                if (line.trim() === "") continue;
-                const chunk = parseSSEChunk(line);
-                if (!chunk) continue;
+                if (line.trim() === "") 
+                  continue;
 
-                if (chunk.model) responseModel = chunk.model;
-                if (chunk.system_fingerprint) systemFingerprint = chunk.system_fingerprint;
+                const chunk = parseSSEChunk(line);
+                if (!chunk) 
+                  continue;
+
+                if (chunk.model) 
+                  responseModel = chunk.model;
+
+                if (chunk.system_fingerprint) 
+                  systemFingerprint = chunk.system_fingerprint;
 
                 if (chunk.usage) {
                   tokensIn = chunk.usage.prompt_tokens ?? tokensIn;
@@ -114,9 +122,14 @@ export const localProvider: ProviderAdapter = {
 
             if (buffer.trim()) {
               const chunk = parseSSEChunk(`data: ${buffer}`);
+
               if (chunk) {
-                if (chunk.model) responseModel = chunk.model;
-                if (chunk.system_fingerprint) systemFingerprint = chunk.system_fingerprint;
+                if (chunk.model) 
+                  responseModel = chunk.model;
+
+                if (chunk.system_fingerprint) 
+                  systemFingerprint = chunk.system_fingerprint;
+                
                 const sseLine = `data: ${JSON.stringify(chunk)}\n\n`;
                 controller.enqueue(new TextEncoder().encode(sseLine));
               }
