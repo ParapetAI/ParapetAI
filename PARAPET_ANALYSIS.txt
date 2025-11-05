@@ -1,0 +1,791 @@
+================================================================================
+PARAPETAI CODEBASE ANALYSIS
+Read-only System Snapshot
+Generated: 2025-11-05
+Git SHA: 8cbc4bf1a880a3a30856120349d7f3c35ad6c9ed
+================================================================================
+
+HUMAN-READABLE BRIEF
+================================================================================
+
+OVERVIEW
+
+ParapetAI is an OpenAI-compatible API gateway written in TypeScript that provides
+budget enforcement, redaction, drift detection, caching, telemetry, and webhook
+notifications for LLM API calls. The runtime (apps/runtime) is a Fastify-based
+HTTP server that proxies requests to upstream providers (OpenAI or OpenAI-
+compatible local servers) while enforcing policy constraints defined per route.
+A CLI tool (packages/cli) encrypts YAML configuration into an encrypted bootstrap
+blob consumed at runtime. Telemetry is persisted to SQLite and replayed on startup
+to restore daily budget state. The system has no embedded admin UI; all observability
+is through logs and optional webhooks.
+
+ENDPOINTS & CONTRACTS
+
+The runtime exposes three HTTP endpoints:
+
+1. POST /v1/chat/completions
+   - OpenAI-compatible chat completions endpoint
+   - Request body: { model, messages, ...params, stream? }
+   - Supports both non-streaming (JSON response) and streaming (SSE with "data:" chunks)
+   - Returns OpenAI-style responses or error objects: { error: { message, type, code? } }
+   - Status codes: 200 (success), 400 (invalid request/drift/redaction), 401 (auth),
+     403 (permissions), 429 (budget), 502 (upstream error)
+
+2. POST /v1/embeddings
+   - OpenAI-compatible embeddings endpoint
+   - Request body: { model, input (string|string[]), ...params }
+   - Non-streaming only
+   - Returns: { object: "list", data: [{ object: "embedding", embedding, index }], model, usage }
+   - Same error shapes as chat completions
+
+3. GET /health
+   - Returns: { statusCode: 200, data: { isValid: true } }
+   - No authentication required
+
+Error responses follow OpenAI format with "error" object containing "message",
+"type" (e.g., "invalid_request_error", "rate_limit_exceeded", "server_error"),
+and optional "code" field. Streaming responses send SSE chunks prefixed with
+"data: " and terminate with "data: [DONE]\n\n".
+
+HEADERS & AUTH
+
+The gateway consumes the following HTTP headers:
+
+1. Authorization (required)
+   - Format: "Bearer <token>"
+   - Parsed in extractBearerToken() in http/openaiUtil.ts
+   - Token is a service-level Parapet API key (not the upstream provider key)
+   - Validated against the in-memory serviceKeyToContext map populated at bootstrap
+   - Missing or invalid token → 401 error with "invalid_parapet_api_key"
+
+2. Content-Type
+   - Must be "application/json" (or compatible)
+   - Enforced by Fastify content-type parser in http/server.ts
+   - Empty body treated as {}, invalid JSON → 400 "invalid_json"
+
+No other custom headers (e.g., X-Parapet-*) are currently consumed. Idempotency-Key
+is NOT implemented.
+
+POLICIES
+
+A. Budget Logic
+   - Implemented in policy/budget.ts
+   - Two-level budget enforcement: per-route daily cap and per-tenant daily cap
+   - Daily window: UTC start-of-day (midnight UTC), computed in telemetry/store.ts
+   - Spend tracked in micro-dollars (1e-6 USD) for precision (budget.ts)
+   - checkAndReserve(): estimates cost, reserves budget pre-call; returns isValid
+   - finalize(): adjusts reservation with actual cost post-call (delta applied)
+   - Hard-stop: if estimated spend exceeds cap, request blocked with 429 "budget_exceeded"
+   - Budget state rebuilt from SQLite telemetry on startup (telemetry/replay.ts)
+   - Threshold alerts: NOT implemented; only hard-stop at cap
+
+B. Redaction Engine
+   - Implemented in security/redaction.ts
+   - Three modes: "off" (no-op), "warn" (scrub and proceed), "block" (reject request)
+   - Built-in patterns: email, api_key, ip, phone (regexes in redactionRuleName)
+   - Custom patterns: support literal strings, regex /.../, or re:... format
+   - Applied to concatenated message content (chat) or input text (embeddings)
+   - "warn" mode replaces matches with [REDACTED_EMAIL], [REDACTED_API_KEY], etc.
+   - "block" mode returns 400 "redaction_blocked" if any pattern matches
+   - Redaction happens in policy/policy.ts before budget reservation
+
+C. Drift Detection
+   - Implemented in security/drift.ts
+   - Two mechanisms:
+     1. drift_strict (boolean): enforces exact model match at request time; if model
+        in body differs from route's provider.model → 400 "drift_violation"
+     2. drift_detection (optional): post-call drift detection based on response metadata:
+        - Model mismatch: response model != route model
+        - System fingerprint change: compares against last seen fingerprint
+        - Cost anomaly: (|actual - expected| / expected) > threshold
+        - Thresholds: sensitivity "low"=25%, "medium"=15%, "high"=10%
+        - Defaults to "medium" (15%) if not specified
+   - Detected drift logged but does NOT block request (informational only)
+   - drift_strict is enforced before call; drift_detection is post-call audit
+
+D. Retry Logic
+   - Implemented in core/providerRouter.ts (non-streaming) and http/completions/index.ts (streaming)
+   - Retries only for non-streaming requests or streaming read failures
+   - Config per route: max_attempts (1..5), base_ms, jitter (boolean), retry_on (status codes),
+     max_elapsed_ms (timeout)
+   - Retryable conditions: network errors (no status) OR status in retry_on list
+   - Non-retryable: 401/invalid_api_key errors
+   - Backoff: exponential (2^attempt * base_ms), optionally full-jitter (random 0..delay)
+   - Streaming: if stream read fails, retries by re-calling provider and resuming
+   - Retry count tracked in metadata.retryCount and logged
+
+E. Rate Limiting
+   - NOT implemented. Budget enforcement acts as a spend-based rate limit, but no
+     token-bucket or per-second request limiting exists.
+
+F. Circuit Breaker
+   - NOT implemented.
+
+PROVIDERS & ROUTING
+
+Supported Providers (providers/):
+1. openai (openaiProvider.ts)
+   - Endpoints: chat_completions, embeddings
+   - Requires: provider_key_ref (resolved to API key), endpoint (base URL like https://api.openai.com/v1)
+   - Streaming: yes (SSE parsing)
+   - URL construction: buildOpenAICompatibleUrl() appends /chat/completions or /embeddings
+   - Headers sent: "Content-Type: application/json", "Authorization: Bearer <key>"
+   - Error handling: parses OpenAI error.message/type/code, throws with provider="openai"
+
+2. local (localProvider.ts)
+   - OpenAI-compatible local server (e.g., Ollama, vLLM)
+   - Endpoints: chat_completions, embeddings
+   - Requires: endpoint (full base URL)
+   - API key optional (sent if present)
+   - Streaming: yes (same SSE parsing as openai)
+   - Same URL/error logic as openai provider
+
+Model Handling:
+- Model selected by matching body.model against allowed routes for the service token
+- selectRouteNameByModel() in http/openaiUtil.ts iterates service's allowed_routes,
+  finds route where route.provider.model == body.model AND endpoint_type matches
+- If no match → "drift_violation" error (drift_strict enforcement)
+- Model mismatch (response model != route model) is logged as drift_detected but not blocked
+
+Provider Call Flow (core/providerRouter.ts):
+1. Merge route.provider.default_params with request params
+2. Enforce max_tokens_out cap if policy exists
+3. Validate params for provider/endpoint type (providers/params.ts)
+4. Call adapter.callLLM() with retry logic
+5. Estimate final cost from tokens_in/tokens_out
+6. Return output + metadata (model, systemFingerprint, retryCount)
+
+RETRIES/RATE-LIMIT/BREAKER SUMMARY
+- Retries: PRESENT (exponential backoff, configurable per route)
+- Rate limiting: ABSENT (only budget-based spend limits)
+- Circuit breaker: ABSENT
+
+TELEMETRY & WEBHOOKS
+
+A. Webhook Implementation
+   - Implemented in util/webhook.ts
+   - Event types: "policy_decision", "request_error", "provider_error"
+   - Per-route webhook config: url, secret_ref, events (boolean flags), include_prompt_snippet
+   - Payload (AuditEventBody): timestamp, tenant, route, model, decision (allow|block),
+     reason_if_blocked, estimated_cost_usd, actual_cost_usd, budget stats, redaction_mode,
+     drift_strict, prompt_excerpt (first 80 chars if enabled), retry_count, cache_hit
+   - Signing: HMAC-SHA256 over JSON body, header "X-Parapet-Signature: sha256=<hex>"
+   - Delivery: fire-and-forget POST via fetch() with keepalive, errors logged only
+   - Webhook emission controlled by route.webhook.events flags
+
+B. Logging Fields (util/log.ts + actual log calls)
+   - request_ok: endpoint, tenant, route, service, model, http_latency_ms, provider_latency_ms,
+     est_cost_usd, final_cost_usd, tokens_in, tokens_out, cache_enabled, cache_hit,
+     cache_size, cache_hits_total, cache_misses_total, cache_evictions_total
+   - request_invalid: endpoint, tenant, route, reason, missing (field name)
+   - request_unauthorized: endpoint, reason (missing_api_key or invalid_parapet_api_key)
+   - policy_block: endpoint, tenant, route, reason (e.g., budget_exceeded, drift_violation)
+   - provider_call: route, provider, model, endpoint, tokens_in, tokens_out, latency_ms,
+     final_cost_usd, stream, retries
+   - provider_error: endpoint, tenant, route, reason, provider, status, code, error_type, message
+   - audit_event: type, tenant, route, decision, reason, est_cost_usd, actual_cost_usd, model
+   - stream_error/stream_write_error: endpoint, tenant, route, error
+
+C. Cache
+   - Implementation: tiny-lru (third-party LRU cache library)
+   - Enabled per route via route.cache.enabled
+   - Cache key (util/cacheKey.ts): stableStringify({ route, provider, endpoint_type, model,
+     redaction_mode, payload (messages or input), params? })
+   - Params included if route.cache.include_params != false; volatile params (client_request_id, etc.) stripped
+   - TTL: route.cache.ttl_ms (default 30000ms = 30s)
+   - Max entries: route.cache.max_entries (default 5000)
+   - Exclusions: streaming requests never cached; non-2xx responses never cached
+   - Eviction policy: LRU (built into tiny-lru)
+   - Cache stats tracked per route: hits, misses, evictions (incremented on overflow)
+   - Cache hit → skip provider call, release budget reservation, return cached body
+
+D. Persistence
+   - Database: SQLite (better-sqlite3), path /data/parapet-telemetry.db
+   - Migrations: telemetry/migrations/001_init.ts, 002_add_retry_count.ts, 003_add_cache_hit.ts
+   - Tables: telemetry_events (columns: ts, tenant, route, service_label, allowed, block_reason,
+     redaction_applied, drift_strict, budget_before_usd, est_cost_usd, final_cost_usd, tokens_in,
+     tokens_out, latency_ms, retry_count, checksum_config, drift_detected, drift_reason,
+     response_model, system_fingerprint, cache_hit)
+   - Indexes: idx_ts, idx_tenant_route_ts
+   - Migration mechanism: runMigrations() in telemetry/migrate.ts, applies up() functions
+   - Writer: telemetry/writer.ts starts background interval (5s) to drain buffer and insert batches
+   - Retention: no automatic cleanup; all rows persisted indefinitely
+   - Replay on startup: loadTodayRows() loads all events since UTC midnight, calls rebuildFromRows()
+     to reconstruct budget state
+
+E. Admin UI
+   - NO embedded admin UI present. System is headless; observability via logs, webhooks, or
+     direct SQLite queries.
+
+DEPLOYMENT & OPS
+
+A. Server Framework
+   - Fastify (apps/runtime/src/http/server.ts)
+   - Port: env PORT (default 8000), host 0.0.0.0
+   - TLS: not configured (HTTP only; TLS offloaded to reverse proxy/load balancer)
+   - Keep-alive: default Node.js/Fastify settings; no explicit timeout set
+
+B. Dockerfile
+   - Dockerfile.runtime (multi-stage)
+   - Builder stage: Node 22 bookworm-slim, installs pnpm, builds TypeScript
+   - Runtime stage: Node 22 bookworm-slim, copies built outputs + node_modules
+   - Entrypoint: node dist/index.js (apps/runtime/src/index.ts compiled)
+   - Volume: /data (must be writable; checked in core/bootstrap.ts)
+   - User: node (non-root)
+   - Exposed port: 8000
+
+C. Health/Readiness
+   - Health endpoint: GET /health → { statusCode: 200, data: { isValid: true } }
+   - Always returns 200; does not check DB or provider connectivity (basic liveness check)
+
+CONFIG & CLI
+
+A. Current Config Schema (libs/config-core/src/spec/types.ts)
+   - ParapetSpec: { version, tenants[], routes[], services[] }
+   - TenantSpec: { name, spend: { daily_usd_cap }, notes? }
+   - RouteSpec: { name, tenant, provider: { type, model, endpoint_type?, provider_key_ref?,
+     endpoint?, default_params? }, policy?: { max_tokens_in, max_tokens_out, budget_daily_usd,
+     drift_strict, drift_detection?, redaction: { mode, patterns } }, retries?, cache?, webhook? }
+   - ServiceSpec: { label, tenant, allowed_routes[], parapet_token_ref }
+   - ProviderType: "openai" | "local"
+   - EndpointType: "chat_completions" | "embeddings"
+
+B. CLI Command (packages/cli/src/commands/build-config.ts)
+   - Command: parapet build-config -f parapet.yaml -o .env
+   - Reads YAML from --file (default parapet.yaml)
+   - Validates spec (validateSpec() in libs/config-core)
+   - Resolves secrets from env vars or prompts (if interactive)
+   - Generates random 256-bit master key (generateMasterKey() uses crypto.randomBytes)
+   - Encrypts hydrated config to base64 blob (AES-256-GCM, HKDF key derivation)
+   - Outputs env vars: PARAPET_MASTER_KEY, PARAPET_BOOTSTRAP_STATE, PARAPET_BOOTSTRAP_VERSION,
+     PARAPET_BOOTSTRAP_TIMESTAMP, PARAPET_SERVICE_<label>_TOKEN=<parapet_token> for each service
+
+C. Bootstrap Flow (core/bootstrap.ts)
+   - Reads PARAPET_MASTER_KEY, PARAPET_BOOTSTRAP_STATE from env
+   - Decrypts blob to HydratedConfig (decryptBlobToHydratedConfig)
+   - Computes config checksum (SHA-256 hash of JSON)
+   - Populates InMemoryVault with provider keys and webhook secrets (indexed by route name)
+   - Indexes routes, tenants, services into maps
+   - Initializes per-route LRU caches (tiny-lru)
+   - Runs DB migrations (telemetry/migrate.ts)
+   - Replays today's telemetry to restore budget state (telemetry/replay.ts)
+   - Starts telemetry writer background task (5s interval)
+
+D. Secrets Handling
+   - Secrets resolved at CLI build time from env vars (e.g., OPENAI_API_KEY) or prompts
+   - Encrypted into PARAPET_BOOTSTRAP_STATE blob using AES-256-GCM
+   - Decrypted at runtime and stored in InMemoryVault (vault.ts)
+   - Vault keyed by "route:<name>:provider_key" and "route:<name>:webhook_secret"
+   - Provider adapters fetch keys from vault during each call
+   - No pass-through to clients; keys never exposed in responses
+
+E. Environment Variables Consumed
+   - PARAPET_MASTER_KEY (required): decryption key for bootstrap state
+   - PARAPET_BOOTSTRAP_STATE (required): encrypted config blob
+   - PORT (optional): HTTP server port (default 8000)
+   - PARAPET_BOOTSTRAP_VERSION (informational, not consumed)
+   - PARAPET_BOOTSTRAP_TIMESTAMP (informational, not consumed)
+
+GAPS & TODOs DETECTED
+
+1. Idempotency-Key header: referenced in problem statement but NOT implemented anywhere
+   - No in-flight deduplication
+   - No completed request replay
+   - No idempotency table in DB
+
+2. Rate limiting: NOT present (only budget-based spend limits)
+   - No token bucket or leaky bucket algorithm
+   - No per-second/per-minute request caps
+
+3. Circuit breaker: NOT present
+   - No failure tracking per provider
+   - No open/half-open/closed states
+
+4. Webhook retry: fire-and-forget; no retry on webhook delivery failure
+   - Errors logged but not persisted or retried
+
+5. Telemetry retention policy: no cleanup; DB grows unbounded
+   - May require manual pruning or external archival
+
+6. Health endpoint: basic liveness only; no readiness check for DB/provider connectivity
+
+7. TLS: not configured in runtime; assumes reverse proxy handles HTTPS
+
+8. Streaming retry: partially implemented (http/completions/index.ts pipeStreamWithRetries)
+   but incomplete error recovery (comment suggests it's a work-in-progress)
+
+9. Webhook include_prompt_snippet: limited to 80 chars (hard-coded in util/webhook.ts)
+
+10. Budget threshold alerts: NOT implemented (only hard-stop at cap)
+
+11. Cache invalidation: no manual invalidation API; only TTL and LRU eviction
+
+12. Multi-tenant isolation: relies on service token mapping; no additional ACLs or namespace isolation
+
+13. Audit log export: no built-in export; requires direct SQLite access
+
+14. Config hot-reload: NOT supported; requires restart to apply new config
+
+15. Observability: no metrics endpoint (Prometheus, etc.); logs and webhooks only
+
+================================================================================
+
+MACHINE-FRIENDLY JSON ARTIFACT
+================================================================================
+
+{
+  "version": "8cbc4bf1a880a3a30856120349d7f3c35ad6c9ed",
+  "analysis_timestamp": "2025-11-05T23:13:13.860Z",
+  "endpoints": [
+    {
+      "path": "/v1/chat/completions",
+      "methods": ["POST"],
+      "streaming": true,
+      "error_shape": "openai",
+      "headers_consumed": ["authorization", "content-type"],
+      "request_schema_paths": [
+        "apps/runtime/src/http/completions/index.ts:81-99"
+      ],
+      "handler_paths": [
+        "apps/runtime/src/http/completions/index.ts:102-416"
+      ]
+    },
+    {
+      "path": "/v1/embeddings",
+      "methods": ["POST"],
+      "streaming": false,
+      "error_shape": "openai",
+      "headers_consumed": ["authorization", "content-type"],
+      "request_schema_paths": [
+        "apps/runtime/src/http/embeddings/index.ts:16-20"
+      ],
+      "handler_paths": [
+        "apps/runtime/src/http/embeddings/index.ts:23-289"
+      ]
+    },
+    {
+      "path": "/health",
+      "methods": ["GET"],
+      "streaming": false,
+      "error_shape": "custom",
+      "headers_consumed": [],
+      "request_schema_paths": [],
+      "handler_paths": [
+        "apps/runtime/src/http/server.ts:42-46"
+      ]
+    }
+  ],
+  "headers": {
+    "authorization": {
+      "required": true,
+      "format": "Bearer <token>",
+      "used_in": ["authentication"],
+      "code_paths": [
+        "apps/runtime/src/http/completions/index.ts:112",
+        "apps/runtime/src/http/embeddings/index.ts:33",
+        "apps/runtime/src/http/openaiUtil.ts:5-10"
+      ]
+    },
+    "content-type": {
+      "required": true,
+      "expected": "application/json",
+      "used_in": ["request_parsing"],
+      "code_paths": [
+        "apps/runtime/src/http/server.ts:16-29"
+      ]
+    },
+    "x-parapet-signature": {
+      "required": false,
+      "direction": "outbound_only",
+      "used_in": ["webhook_signing"],
+      "code_paths": [
+        "apps/runtime/src/util/webhook.ts:61"
+      ]
+    }
+  },
+  "policies": {
+    "budgets": {
+      "present": true,
+      "code_paths": [
+        "apps/runtime/src/policy/budget.ts"
+      ],
+      "window": "daily-utc",
+      "hard_stop": true,
+      "threshold_alerts": false,
+      "levels": ["per-route", "per-tenant"],
+      "precision": "micro-dollars",
+      "enforcement_point": "policy/policy.ts:145-151"
+    },
+    "redaction": {
+      "present": true,
+      "modes": ["off", "warn", "block"],
+      "patterns": ["email", "api_key", "ip", "phone", "custom"],
+      "code_paths": [
+        "apps/runtime/src/security/redaction.ts"
+      ],
+      "enforcement_point": "policy/policy.ts:106-137"
+    },
+    "drift": {
+      "present": true,
+      "mechanisms": ["drift_strict", "drift_detection"],
+      "drift_strict": {
+        "enforcement": "pre-call",
+        "action": "block",
+        "code_paths": [
+          "apps/runtime/src/security/drift.ts:3-11",
+          "apps/runtime/src/http/completions/index.ts:133-139",
+          "apps/runtime/src/http/embeddings/index.ts:84-89"
+        ]
+      },
+      "drift_detection": {
+        "enforcement": "post-call",
+        "action": "log_only",
+        "checks": ["model_mismatch", "fingerprint_change", "cost_anomaly"],
+        "thresholds": {
+          "low": 0.25,
+          "medium": 0.15,
+          "high": 0.10
+        },
+        "code_paths": [
+          "apps/runtime/src/security/drift.ts:44-82"
+        ]
+      }
+    }
+  },
+  "providers": [
+    {
+      "name": "openai",
+      "endpoints": ["chat_completions", "embeddings"],
+      "streaming": true,
+      "requires": ["provider_key_ref", "endpoint"],
+      "paths": [
+        "apps/runtime/src/providers/openaiProvider.ts"
+      ]
+    },
+    {
+      "name": "local",
+      "endpoints": ["chat_completions", "embeddings"],
+      "streaming": true,
+      "requires": ["endpoint"],
+      "optional": ["provider_key_ref"],
+      "paths": [
+        "apps/runtime/src/providers/localProvider.ts"
+      ]
+    }
+  ],
+  "routing": {
+    "model_selection": "body",
+    "selection_logic": "match body.model to route.provider.model for allowed routes",
+    "mismatch_policy": "reject",
+    "paths": [
+      "apps/runtime/src/http/openaiUtil.ts:24-44"
+    ]
+  },
+  "retries": {
+    "present": true,
+    "scope": "non-streaming requests and streaming read failures",
+    "algorithm": "exponential_backoff",
+    "jitter": "configurable",
+    "retryable_statuses": "configurable per route (retry_on)",
+    "non_retryable": ["401", "invalid_api_key"],
+    "config_fields": ["max_attempts", "base_ms", "jitter", "retry_on", "max_elapsed_ms"],
+    "paths": [
+      "apps/runtime/src/core/providerRouter.ts:54-98",
+      "apps/runtime/src/util/backoff.ts",
+      "apps/runtime/src/http/completions/index.ts:33-79"
+    ]
+  },
+  "rate_limit": {
+    "present": false
+  },
+  "breaker": {
+    "present": false
+  },
+  "webhooks": {
+    "present": true,
+    "events": ["policy_decision", "request_error", "provider_error"],
+    "signature_header": "X-Parapet-Signature",
+    "signature_format": "sha256=<hex>",
+    "algo": "hmac-sha256",
+    "delivery": "fire-and-forget",
+    "retry": false,
+    "payload_fields": [
+      "timestamp",
+      "tenant",
+      "route",
+      "model",
+      "decision",
+      "reason_if_blocked",
+      "estimated_cost_usd",
+      "actual_cost_usd",
+      "budget_daily_usd",
+      "budget_spend_today_usd",
+      "tenant_budget_daily_usd",
+      "tenant_budget_spend_today_usd",
+      "redaction_mode",
+      "drift_strict",
+      "prompt_excerpt",
+      "retry_count",
+      "cache_hit"
+    ],
+    "paths": [
+      "apps/runtime/src/util/webhook.ts"
+    ]
+  },
+  "cache": {
+    "present": true,
+    "impl": "tiny-lru",
+    "scope": "per-route",
+    "key_basis": [
+      "route",
+      "provider",
+      "endpoint_type",
+      "model",
+      "redaction_mode",
+      "payload (messages or input)",
+      "params (optional)"
+    ],
+    "exclusions": ["streaming requests", "non-2xx responses"],
+    "eviction_policy": "lru",
+    "ttl_configurable": true,
+    "max_entries_configurable": true,
+    "defaults": {
+      "ttl_ms": 30000,
+      "max_entries": 5000,
+      "include_params": true
+    },
+    "stats_tracked": ["hits", "misses", "evictions"],
+    "paths": [
+      "apps/runtime/src/util/cacheKey.ts",
+      "apps/runtime/src/core/bootstrap.ts:52-68",
+      "apps/runtime/src/http/completions/index.ts:210-256",
+      "apps/runtime/src/http/embeddings/index.ts:141-185"
+    ]
+  },
+  "storage": {
+    "db": "sqlite",
+    "library": "better-sqlite3",
+    "path": "/data/parapet-telemetry.db",
+    "migrations": [
+      "apps/runtime/src/telemetry/migrations/001_init.ts",
+      "apps/runtime/src/telemetry/migrations/002_add_retry_count.ts",
+      "apps/runtime/src/telemetry/migrations/003_add_cache_hit.ts"
+    ],
+    "tables": ["telemetry_events"],
+    "schema": {
+      "telemetry_events": {
+        "columns": [
+          "ts INTEGER",
+          "tenant TEXT",
+          "route TEXT",
+          "service_label TEXT",
+          "allowed INTEGER",
+          "block_reason TEXT",
+          "redaction_applied INTEGER",
+          "drift_strict INTEGER",
+          "budget_before_usd REAL",
+          "est_cost_usd REAL",
+          "final_cost_usd REAL",
+          "tokens_in INTEGER",
+          "tokens_out INTEGER",
+          "latency_ms INTEGER",
+          "retry_count INTEGER",
+          "checksum_config TEXT",
+          "drift_detected INTEGER",
+          "drift_reason TEXT",
+          "response_model TEXT",
+          "system_fingerprint TEXT",
+          "cache_hit INTEGER"
+        ],
+        "indexes": ["idx_ts", "idx_tenant_route_ts"]
+      }
+    },
+    "writer_interval_ms": 5000,
+    "retention_policy": "none (infinite retention)",
+    "paths": [
+      "apps/runtime/src/telemetry/store.ts",
+      "apps/runtime/src/telemetry/migrate.ts",
+      "apps/runtime/src/telemetry/writer.ts"
+    ]
+  },
+  "config": {
+    "format": "yaml",
+    "example_path": "parapet.yaml",
+    "schema_paths": [
+      "libs/config-core/src/spec/types.ts"
+    ],
+    "cli_paths": [
+      "packages/cli/src/main.ts",
+      "packages/cli/src/commands/build-config.ts"
+    ],
+    "encryption": "AES-256-GCM",
+    "key_derivation": "HKDF-SHA256",
+    "bootstrap_envs": [
+      "PARAPET_MASTER_KEY",
+      "PARAPET_BOOTSTRAP_STATE",
+      "PARAPET_BOOTSTRAP_VERSION",
+      "PARAPET_BOOTSTRAP_TIMESTAMP"
+    ],
+    "runtime_envs": [
+      "PARAPET_MASTER_KEY",
+      "PARAPET_BOOTSTRAP_STATE",
+      "PORT"
+    ],
+    "secret_resolution": ["env_vars", "interactive_prompts"],
+    "hot_reload": false
+  },
+  "logging_fields": {
+    "request_ok": [
+      "endpoint",
+      "tenant",
+      "route",
+      "service",
+      "model",
+      "http_latency_ms",
+      "provider_latency_ms",
+      "est_cost_usd",
+      "final_cost_usd",
+      "tokens_in",
+      "tokens_out",
+      "cache_enabled",
+      "cache_hit",
+      "cache_size",
+      "cache_hits_total",
+      "cache_misses_total",
+      "cache_evictions_total"
+    ],
+    "request_invalid": [
+      "endpoint",
+      "tenant",
+      "route",
+      "reason",
+      "missing"
+    ],
+    "request_unauthorized": [
+      "endpoint",
+      "reason"
+    ],
+    "policy_block": [
+      "endpoint",
+      "tenant",
+      "route",
+      "reason"
+    ],
+    "provider_call": [
+      "route",
+      "provider",
+      "model",
+      "endpoint",
+      "tokens_in",
+      "tokens_out",
+      "latency_ms",
+      "final_cost_usd",
+      "stream",
+      "retries"
+    ],
+    "provider_error": [
+      "endpoint",
+      "tenant",
+      "route",
+      "reason",
+      "provider",
+      "status",
+      "code",
+      "error_type",
+      "message"
+    ],
+    "audit_event": [
+      "type",
+      "tenant",
+      "route",
+      "decision",
+      "reason",
+      "est_cost_usd",
+      "actual_cost_usd",
+      "model"
+    ],
+    "stream_error": [
+      "endpoint",
+      "tenant",
+      "route",
+      "error"
+    ]
+  },
+  "env_vars": [
+    "PARAPET_MASTER_KEY",
+    "PARAPET_BOOTSTRAP_STATE",
+    "PARAPET_BOOTSTRAP_VERSION",
+    "PARAPET_BOOTSTRAP_TIMESTAMP",
+    "PORT",
+    "PARAPET_SERVICE_<label>_TOKEN"
+  ],
+  "build_deploy": {
+    "dockerfiles": [
+      "Dockerfile.runtime"
+    ],
+    "entrypoints": [
+      "apps/runtime/src/index.ts"
+    ],
+    "base_image": "node:22-bookworm-slim",
+    "user": "node",
+    "port": 8000,
+    "volume": "/data",
+    "build_deps": ["python3", "make", "g++"],
+    "package_manager": "pnpm"
+  },
+  "absent_features": {
+    "idempotency_key": {
+      "present": false,
+      "note": "No header parsing, no deduplication logic, no DB table"
+    },
+    "rate_limiting": {
+      "present": false,
+      "note": "Only budget-based spend limits; no per-second/per-minute request caps"
+    },
+    "circuit_breaker": {
+      "present": false,
+      "note": "No failure tracking, no open/half-open/closed states"
+    },
+    "webhook_retry": {
+      "present": false,
+      "note": "Fire-and-forget; errors logged but not retried"
+    },
+    "telemetry_retention_policy": {
+      "present": false,
+      "note": "Infinite retention; no automatic cleanup"
+    },
+    "readiness_check": {
+      "present": false,
+      "note": "Health endpoint is liveness only; no DB/provider connectivity check"
+    },
+    "tls": {
+      "present": false,
+      "note": "HTTP only; assumes reverse proxy handles HTTPS"
+    },
+    "budget_threshold_alerts": {
+      "present": false,
+      "note": "Only hard-stop at cap; no soft alerts or warnings"
+    },
+    "cache_invalidation_api": {
+      "present": false,
+      "note": "Only TTL and LRU eviction; no manual invalidation"
+    },
+    "config_hot_reload": {
+      "present": false,
+      "note": "Requires restart to apply new config"
+    },
+    "metrics_endpoint": {
+      "present": false,
+      "note": "No Prometheus/StatsD; logs and webhooks only"
+    },
+    "admin_ui": {
+      "present": false,
+      "note": "Headless; no embedded web console"
+    }
+  }
+}
+
+================================================================================
+END OF ANALYSIS
+================================================================================
