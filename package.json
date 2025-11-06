@@ -1,6 +1,6 @@
 {
   "name": "@parapetai/parapetai",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -25,7 +25,13 @@
     "script:descrypt-bootstrap-state": "npx tsx .\\packages\\cli\\scripts\\descrypt-bootstrap-state.ts",
     "script:webhook-receiver": "npx tsx .\\apps\\runtime\\scripts\\webhook-receiver.ts",
     "parapet:build-config": "npx -y tsx packages/cli/src/main.ts build-config -o .env",
-    "test:runtime": "pnpm --filter @parapetai/runtime run test"
+    "test:runtime": "pnpm --filter @parapetai/runtime run test",
+    "start:landing-page": "pnpm --filter @parapetai/landing-page run dev",
+    "docker:publish": "node ./scripts/docker-release.mjs",
+    "docker:publishx": "node ./scripts/docker-release.mjs --multiarch",
+    "release:patch": "pnpm version patch --no-git-tag-version && pnpm docker:publish",
+    "release:minor": "pnpm version minor --no-git-tag-version && pnpm docker:publish",
+    "release:major": "pnpm version major --no-git-tag-version && pnpm docker:publish"
   },
   "devDependencies": {
     "@types/node": "^22.18.13",
