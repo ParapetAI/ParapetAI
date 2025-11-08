@@ -36,13 +36,15 @@ const Home: FC = () => {
           </div>
           <div className="mt-2">
             <CodeSnippet
-              title="Run locally in two commands"
+              title="Run locally in three commands"
               lines={[
                 '# Build encrypted config (.env) from your YAML',
                 'npx @parapetai/cli@latest build-config --file parapet.yaml --non-interactive --out .env',
                 '',
-                '# Pull & run the runtime container',
+                '# Pull the runtime container',
                 'docker pull parapetai/parapetai-runtime:latest',
+                '',
+                '# Run it with the encrypted config',
                 'docker run -p 8000:8000 -v parapet-data:/data --env-file .env parapetai/parapetai-runtime:latest',
               ]}
             />

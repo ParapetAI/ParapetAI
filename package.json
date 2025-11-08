@@ -25,6 +25,7 @@
     "script:descrypt-bootstrap-state": "npx tsx .\\packages\\cli\\scripts\\descrypt-bootstrap-state.ts",
     "script:webhook-receiver": "npx tsx .\\apps\\runtime\\scripts\\webhook-receiver.ts",
     "parapet:build-config": "npx -y tsx packages/cli/src/main.ts build-config -o .env",
+    "parapet:init": "npx -y tsx packages/cli/src/main.ts init",
     "test:runtime": "pnpm --filter @parapetai/runtime run test",
     "start:landing-page": "pnpm --filter @parapetai/landing-page run dev",
     "docker:publish": "node ./scripts/docker-release.mjs",

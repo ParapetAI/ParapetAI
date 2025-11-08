@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { buildConfigCommand } from './commands/build-config.js';
+import { initCommand } from './commands/init.js';
 
 export function run(): void {
   const program = new Command();
@@ -8,6 +9,7 @@ export function run(): void {
     .description('ParapetAI CLI');
 
   program.addCommand(buildConfigCommand());
+  program.addCommand(initCommand());
 
   program.parse(process.argv);
 }
