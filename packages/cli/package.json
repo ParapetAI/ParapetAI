@@ -1,24 +1,36 @@
 {
   "name": "@parapetai/cli",
-  "version": "0.1.0",
+  "version": "0.1.6",
+  "description": "Command-line interface for building encrypted ParapetAI bootstrap configurations",
   "private": false,
   "bin": {
-    "parapet": "./bin/parapet"
+    "parapetai": "./bin/parapetai"
   },
   "type": "commonjs",
   "main": "dist/main.js",
   "types": "dist/main.d.ts",
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "ts-node src/main.ts",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "prepublishOnly": "pnpm build",
+    "version:patch": "node ../../scripts/version-package.mjs packages/cli patch",
+    "version:minor": "node ../../scripts/version-package.mjs packages/cli minor",
+    "version:major": "node ../../scripts/version-package.mjs packages/cli major",
+    "release:patch": "pnpm version:patch && pnpm publish --no-git-checks",
+    "release:minor": "pnpm version:minor && pnpm publish --no-git-checks",
+    "release:major": "pnpm version:major && pnpm publish --no-git-checks"
   },
   "dependencies": {
-    "@parapetai/config-core": "workspace:*",
+    "@parapetai/config-core": "^0.1.9",
     "commander": "^11.1.0",
     "inquirer": "^9.2.15"
   },
@@ -30,4 +42,3 @@
     "typescript": "^5.9.3"
   }
 }
-

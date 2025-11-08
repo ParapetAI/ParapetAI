@@ -3,114 +3,20 @@ version: 1
 tenants:
   - name: default
     spend:
-      daily_usd_cap: 5.0
-
-services:
-  - label: openai-app
-    tenant: default
-    allowed_routes:
-      - openai
-      - embeddings
-    parapet_token_ref: openai_app_token_ref
-
-  - label: openai-app-no-policy
-    tenant: default
-    allowed_routes:
-      - openai-no-policy
-    parapet_token_ref: openai_app_no_policy_token_ref
-
-  - label: local-app
-    tenant: default
-    allowed_routes:
-      - local
-    parapet_token_ref: local_app_token_ref
+      daily_usd_cap: 50
 
 routes:
-  - name: openai-no-policy
+  - name: test
     tenant: default
     provider:
       type: openai
       model: gpt-4o-mini
       endpoint_type: chat_completions
+      provider_key_ref: ENV:test
       endpoint: https://api.openai.com/v1
-      provider_key_ref: openai_app_no_policy_token_ref
-      default_params:
-        temperature: 0.7
-        top_p: 0.9
 
-  - name: openai
+services:
+  - label: test
     tenant: default
-    provider:
-      type: openai
-      model: gpt-4o-mini
-      endpoint_type: chat_completions
-      endpoint: https://api.openai.com/v1
-      provider_key_ref: openai_api_key_ref
-      default_params:
-        temperature: 0.7
-        top_p: 0.9
-    policy:
-      max_tokens_in: 4000
-      max_tokens_out: 4000
-      budget_daily_usd: 2.0
-      drift_strict: true
-      drift_detection:
-        sensitivity: medium  # low (25%), medium (15%), high (10%)
-      redaction:
-        mode: warn # block, warn, off
-        patterns: ["email", "api_key", "ip", "phone"]
-    retries:
-      max_attempts: 3
-      base_ms: 200
-      jitter: true
-      retry_on: [429, 500, 502, 503, 504]
-      max_elapsed_ms: 10000
-    cache:
-      enabled: true
-      mode: exact
-      ttl_ms: 30000
-      max_entries: 5000
-      include_params: true
-    # webhook:
-    #   url: "https://e69b3bcf5784.ngrok-free.app"
-    #   secret_ref: parapet_audit_hmac_secret_ref
-    #   include_prompt_snippet: false
-    #   events:
-    #     policy_decisions: true
-    #     request_errors: true
-    #     provider_errors: true
-
-  - name: embeddings
-    tenant: default
-    provider:
-      type: openai
-      model: text-embedding-3-small
-      endpoint_type: embeddings
-      endpoint: https://api.openai.com/v1
-      provider_key_ref: openai_api_key_ref
-    policy:
-      max_tokens_in: 8000
-      max_tokens_out: 0
-      budget_daily_usd: 2.0
-      drift_strict: true
-      drift_detection:
-        sensitivity: high  # More sensitive for embeddings (10% threshold)
-      redaction:
-        mode: block
-        patterns: ["email", "api_key", "ip", "phone"]
-
-  - name: local
-    tenant: default
-    provider:
-      type: local
-      model: deepseek-r1:8b
-      endpoint_type: embeddings
-      endpoint: https://bbf031e8ecd1.ngrok-free.app/v1
-    policy:
-      max_tokens_in: 4000
-      max_tokens_out: 4000
-      budget_daily_usd: 2.0
-      drift_strict: true
-      redaction:
-        mode: warn
-        patterns: ["email", "api_key", "ip", "phone"]
+    allowed_routes: [test]
+    parapet_token_ref: ENV:PARAPET_SERVICE_TEST_TOKEN
