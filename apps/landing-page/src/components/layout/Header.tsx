@@ -7,7 +7,7 @@ const Header: FC = () => {
   const githubUrl = (import.meta as any).env?.VITE_GITHUB_URL as string | undefined;
   return (
     <header className="sticky top-0 z-10 w-full border-b-[3px] border-border bg-surface">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5">
         <Link to="/" aria-label="Home" className="inline-flex items-center">
           <Logo />
         </Link>

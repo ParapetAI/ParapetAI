@@ -60,110 +60,110 @@ const Home: FC = () => {
         </div>
       </section>
 
-  {/* How it works */}
-  <section aria-labelledby="how" className="mt-16 sm:mt-24">
-    <h2 id="how" className="text-lg font-semibold text-text">How it works</h2>
-    <ol className="mt-6 grid gap-6 sm:grid-cols-3">
-      <li className="rounded-none border-[3px] border-border bg-surface p-5 shadow-md">
-        <div className="text-sm font-semibold text-text">1) Define config</div>
-        <p className="mt-2 text-sm text-muted">Write <code>parapet.yaml</code> with tenants, routes, policies, and services.</p>
-      </li>
-      <li className="rounded-none border-[3px] border-border bg-surface p-5 shadow-md">
-        <div className="text-sm font-semibold text-text">2) Build bootstrap</div>
-        <p className="mt-2 text-sm text-muted">Use the CLI to validate and encrypt into an <code>.env</code> bootstrap.</p>
-      </li>
-      <li className="rounded-none border-[3px] border-border bg-surface p-5 shadow-md">
-        <div className="text-sm font-semibold text-text">3) Run container</div>
-        <p className="mt-2 text-sm text-muted">Start the runtime. Call OpenAI‑compatible endpoints with your service token.</p>
-      </li>
-    </ol>
-  </section>
+      {/* How it works */}
+      <section aria-labelledby="how" className="mt-16 sm:mt-24">
+        <h2 id="how" className="text-lg font-semibold text-text">How it works</h2>
+        <ol className="mt-6 grid gap-6 sm:grid-cols-3">
+          <li className="rounded-none border-[3px] border-border bg-surface p-5 shadow-md">
+            <div className="text-sm font-semibold text-text">1) Define config</div>
+            <p className="mt-2 text-sm text-muted">Write <code>parapet.yaml</code> with tenants, routes, policies, and services.</p>
+          </li>
+          <li className="rounded-none border-[3px] border-border bg-surface p-5 shadow-md">
+            <div className="text-sm font-semibold text-text">2) Build bootstrap</div>
+            <p className="mt-2 text-sm text-muted">Use the CLI to validate and encrypt into an <code>.env</code> bootstrap.</p>
+          </li>
+          <li className="rounded-none border-[3px] border-border bg-surface p-5 shadow-md">
+            <div className="text-sm font-semibold text-text">3) Run container</div>
+            <p className="mt-2 text-sm text-muted">Start the runtime. Call OpenAI‑compatible endpoints with your service token.</p>
+          </li>
+        </ol>
+      </section>
 
-  {/* Quickstart teaser */}
-  <section aria-labelledby="teaser" className="mt-16 sm:mt-24">
-    <h2 id="teaser" className="text-lg font-semibold text-text">Try it now</h2>
-    <p className="mt-2 text-sm text-muted">Point your existing OpenAI client at Parapet’s base URL and use your service token.</p>
-    <div className="mt-4">
-      <CodeSnippet
-        lines={[
-          'curl -sS http://localhost:8000/v1/chat/completions \\\\',
-          '  -H "Authorization: Bearer $PARAPET_SERVICE_MYAPP_TOKEN" \\\\',
-          '  -H "Content-Type: application/json" \\\\',
-          '  -d "{\\\"model\\\":\\\"gpt-4o-mini\\\",\\\"messages\\\":[{\\\"role\\\":\\\"user\\\",\\\"content\\\":\\\"Hello\\\"}]}"',
-        ]}
-      />
-    </div>
-  </section>
+      {/* Quickstart teaser */}
+      <section aria-labelledby="teaser" className="mt-16 sm:mt-24">
+        <h2 id="teaser" className="text-lg font-semibold text-text">Try it now</h2>
+        <p className="mt-2 text-sm text-muted">Point your existing OpenAI client at Parapet’s base URL and use your service token.</p>
+        <div className="mt-4">
+          <CodeSnippet
+            lines={[
+              'curl -sS http://localhost:8000/v1/chat/completions \\\\',
+              '  -H "Authorization: Bearer $PARAPET_SERVICE_MYAPP_TOKEN" \\\\',
+              '  -H "Content-Type: application/json" \\\\',
+              '  -d "{\\\"model\\\":\\\"gpt-4o-mini\\\",\\\"messages\\\":[{\\\"role\\\":\\\"user\\\",\\\"content\\\":\\\"Hello\\\"}]}"',
+            ]}
+          />
+        </div>
+      </section>
 
-  {/* Comparison */}
+      {/* Comparison */}
       <section aria-labelledby="compare" className="mt-16 sm:mt-24">
-        <h2 id="compare" className="text-lg font-semibold text-text">Hosted dashboards vs Parapet (self-hosted)</h2>
+        <h2 id="compare" className="text-lg font-semibold text-text">ParapetAI LLM Gateway (self-hosted) vs Hosted Dashboard Services</h2>
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
+          <div className="rounded-none border-[3px] border-border bg-surface p-6 shadow-md">
+            <h3 className="text-base font-semibold text-text mb-4">Parapet (Self-Hosted)</h3>
+            <ul className="space-y-3 text-sm text-muted">
+              <li className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span><span className="font-medium text-text">Free to run:</span> No subscriptions, no usage caps.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span><span className="font-medium text-text">Offline config:</span> Build locally; ship only encrypted bootstrap.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span><span className="font-medium text-text">OpenAI‑compatible:</span> Swap providers without app rewrites.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span><span className="font-medium text-text">Signed receipts:</span> HMAC‑signed webhooks for audits.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span><span className="font-medium text-text">Data stays with you:</span> Telemetry/logs remain in your infra.</span>
+              </li>
+            </ul>
+          </div>
           <div className="rounded-none border-[3px] border-border bg-surface p-6 shadow-md">
             <h3 className="text-base font-semibold text-text mb-4">Hosted Dashboard Services</h3>
             <ul className="space-y-3 text-sm text-muted">
               <li className="flex items-start gap-2">
                 <span className="text-danger mt-0.5">×</span>
-            <span><span className="font-medium text-text">Subscription fees:</span> Pay monthly/usage tiers with overages.</span>
+                <span><span className="font-medium text-text">Subscription fees:</span> Pay monthly/usage tiers with overages.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-danger mt-0.5">×</span>
-            <span><span className="font-medium text-text">Secrets in vendor UIs:</span> Keys live in third‑party dashboards.</span>
+                <span><span className="font-medium text-text">Secrets in vendor UIs:</span> Keys live in third‑party dashboards.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-danger mt-0.5">×</span>
-            <span><span className="font-medium text-text">Vendor lock‑in:</span> Proprietary SDKs and migration friction.</span>
+                <span><span className="font-medium text-text">Vendor lock‑in:</span> Proprietary SDKs and migration friction.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-danger mt-0.5">×</span>
-            <span><span className="font-medium text-text">Opaque observability:</span> Limited exports and audit trails.</span>
+                <span><span className="font-medium text-text">Opaque observability:</span> Limited exports and audit trails.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-danger mt-0.5">×</span>
-            <span><span className="font-medium text-text">Data leaves your infra:</span> Payloads/telemetry flow via vendors.</span>
-              </li>
-            </ul>
-          </div>
-          <div className="rounded-none border-[3px] border-border bg-surface p-6 shadow-md">
-            <h3 className="text-base font-semibold text-text mb-4">Parapet (Self-Hosted)</h3>
-            <ul className="space-y-3 text-sm text-muted">
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">✓</span>
-            <span><span className="font-medium text-text">Free to run:</span> No subscriptions, no usage caps.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">✓</span>
-            <span><span className="font-medium text-text">Offline config:</span> Build locally; ship only encrypted bootstrap.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">✓</span>
-            <span><span className="font-medium text-text">OpenAI‑compatible:</span> Swap providers without app rewrites.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">✓</span>
-            <span><span className="font-medium text-text">Signed receipts:</span> HMAC‑signed webhooks for audits.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent mt-0.5">✓</span>
-            <span><span className="font-medium text-text">Data stays with you:</span> Telemetry/logs remain in your infra.</span>
+                <span><span className="font-medium text-text">Data leaves your infra:</span> Payloads/telemetry flow via vendors.</span>
               </li>
             </ul>
           </div>
         </div>
       </section>
 
-  {/* Bottom CTA */}
-  <section aria-labelledby="cta" className="mt-16 sm:mt-24">
-    <div className="rounded-none border-[3px] border-border bg-surface p-6 shadow-md flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <h2 id="cta" className="text-lg font-semibold text-text">Run locally in 60 seconds</h2>
-        <p className="mt-1 text-sm text-muted">One container. OpenAI‑compatible. Policies, budgets, and signed receipts.</p>
-      </div>
-      <div>
-        <Button href="/docs/quickstart" size="large" icon={<Rocket className="h-5 w-5" aria-hidden="true" />}>Get Started</Button>
-      </div>
-    </div>
-  </section>
+      {/* Bottom CTA */}
+      <section aria-labelledby="cta" className="mt-16 sm:mt-24">
+        <div className="rounded-none border-[3px] border-border bg-surface p-6 shadow-md flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h2 id="cta" className="text-lg font-semibold text-text">Run locally in 60 seconds</h2>
+            <p className="mt-1 text-sm text-muted">One container. OpenAI‑compatible. Policies, budgets, and signed receipts.</p>
+          </div>
+          <div>
+            <Button href="/docs/quickstart" size="large" icon={<Rocket className="h-5 w-5" aria-hidden="true" />}>Get Started</Button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

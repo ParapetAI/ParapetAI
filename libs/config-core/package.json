@@ -1,16 +1,28 @@
 {
   "name": "@parapetai/config-core",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.10",
+  "description": "Core library for parsing, validating, and processing ParapetAI configuration files",
+  "private": false,
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "prepublishOnly": "pnpm build",
+    "version:patch": "node ../../scripts/version-package.mjs libs/config-core patch",
+    "version:minor": "node ../../scripts/version-package.mjs libs/config-core minor",
+    "version:major": "node ../../scripts/version-package.mjs libs/config-core major",
+    "release:patch": "pnpm version:patch && pnpm publish --no-git-checks",
+    "release:minor": "pnpm version:minor && pnpm publish --no-git-checks",
+    "release:major": "pnpm version:major && pnpm publish --no-git-checks"
   },
   "dependencies": {
     "yaml": "^2.6.0"
@@ -21,4 +33,3 @@
     "@types/node": "^22.18.13"
   }
 }
-

@@ -31,7 +31,19 @@
     "docker:publishx": "node ./scripts/docker-release.mjs --multiarch",
     "release:patch": "pnpm version patch --no-git-tag-version && pnpm docker:publish",
     "release:minor": "pnpm version minor --no-git-tag-version && pnpm docker:publish",
-    "release:major": "pnpm version major --no-git-tag-version && pnpm docker:publish"
+    "release:major": "pnpm version major --no-git-tag-version && pnpm docker:publish",
+    "cli:version:patch": "pnpm --filter @parapetai/cli run version:patch",
+    "cli:version:minor": "pnpm --filter @parapetai/cli run version:minor",
+    "cli:version:major": "pnpm --filter @parapetai/cli run version:major",
+    "cli:release:patch": "pnpm --filter @parapetai/cli run version:patch && pnpm publish --filter @parapetai/cli --access public --no-git-checks",
+    "cli:release:minor": "pnpm --filter @parapetai/cli run version:minor && pnpm publish --filter @parapetai/cli --access public --no-git-checks",
+    "cli:release:major": "pnpm --filter @parapetai/cli run version:major && pnpm publish --filter @parapetai/cli --access public --no-git-checks",
+    "config-core:version:patch": "pnpm --filter @parapetai/config-core run version:patch",
+    "config-core:version:minor": "pnpm --filter @parapetai/config-core run version:minor",
+    "config-core:version:major": "pnpm --filter @parapetai/config-core run version:major",
+    "config-core:release:patch": "pnpm --filter @parapetai/config-core run version:patch && pnpm publish --filter @parapetai/config-core --access public --no-git-checks",
+    "config-core:release:minor": "pnpm --filter @parapetai/config-core run version:minor && pnpm publish --filter @parapetai/config-core --access public --no-git-checks",
+    "config-core:release:major": "pnpm --filter @parapetai/config-core run version:major && pnpm publish --filter @parapetai/config-core --access public --no-git-checks"
   },
   "devDependencies": {
     "@types/node": "^22.18.13",

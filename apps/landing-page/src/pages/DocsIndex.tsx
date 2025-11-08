@@ -22,6 +22,11 @@ const DocsIndex: FC = () => {
           desc="Exact YAML schema, constraints, env refs, and allowed params."
           to="/docs/config"
         />
+        <DocCard
+          title="Security"
+          desc="Encryption, authentication, redaction, webhook signing, and security practices."
+          to="/docs/security"
+        />
       </section>
     </div>
   );

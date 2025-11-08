@@ -6,6 +6,7 @@ import Features from './pages/Features';
 import DocsQuickstart from './pages/DocsQuickstart';
 import DocsIndex from './pages/DocsIndex';
 import DocsConfig from './pages/DocsConfig';
+import DocsSecurity from './pages/DocsSecurity';
 import { Routes, Route } from 'react-router-dom';
 
 const App: FC = () => {
@@ -19,6 +20,7 @@ const App: FC = () => {
           <Route path="/docs" element={<DocsIndex />} />
           <Route path="/docs/quickstart" element={<DocsQuickstart />} />
           <Route path="/docs/config" element={<DocsConfig />} />
+          <Route path="/docs/security" element={<DocsSecurity />} />
         </Routes>
       </main>
       <Footer />
