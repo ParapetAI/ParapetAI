@@ -74,8 +74,8 @@ importers:
   packages/cli:
     dependencies:
       '@parapetai/config-core':
-        specifier: workspace:*
-        version: link:../../libs/config-core
+        specifier: ^0.1.9
+        version: 0.1.10
       commander:
         specifier: ^11.1.0
         version: 11.1.0
@@ -582,6 +582,24 @@ packages:
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
 
+<<<<<<< Updated upstream
+=======
+  '@nodelib/fs.scandir@2.1.5':
+    resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
+    engines: {node: '>= 8'}
+
+  '@nodelib/fs.stat@2.0.5':
+    resolution: {integrity: sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A==}
+    engines: {node: '>= 8'}
+
+  '@nodelib/fs.walk@1.2.8':
+    resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
+    engines: {node: '>= 8'}
+
+  '@parapetai/config-core@0.1.10':
+    resolution: {integrity: sha512-nzLV7H7gUcGNBzdmB5iMpjvoQt0PFAnVvjdclFZ57pb722mMD1qTwBs+fAO5Dr3AMUVcQDj1KlImrQ0uYM2YJg==}
+
+>>>>>>> Stashed changes
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
@@ -2567,6 +2585,25 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
+<<<<<<< Updated upstream
+=======
+  '@nodelib/fs.scandir@2.1.5':
+    dependencies:
+      '@nodelib/fs.stat': 2.0.5
+      run-parallel: 1.2.0
+
+  '@nodelib/fs.stat@2.0.5': {}
+
+  '@nodelib/fs.walk@1.2.8':
+    dependencies:
+      '@nodelib/fs.scandir': 2.1.5
+      fastq: 1.19.1
+
+  '@parapetai/config-core@0.1.10':
+    dependencies:
+      yaml: 2.8.1
+
+>>>>>>> Stashed changes
   '@pinojs/redact@0.4.0': {}
 
   '@pkgjs/parseargs@0.11.0':
