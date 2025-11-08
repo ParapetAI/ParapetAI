@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+
+/* Design tokens */
+:root {
+  color-scheme: light;
+
+  /* Colors (HSL components for proper alpha support) */
+  /* Sun theme */
+  --bg: 42 100% 94%;
+  --surface: 30 100% 97%;
+  --text: 230 50% 10%;
+  --muted: 25 15% 45%;
+  --border: 0 0% 7%;
+  --accent: 16 90% 55%;
+  --accent-contrast: 0 0% 100%;
+  --success: 142 70% 45%;
+  --warn: 32 94% 50%;
+  --danger: 0 84% 60%;
+
+  /* Radii (lean toward sharp corners) */
+  --radius-sm: 0rem;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.125rem;
+
+  /* Shadows (bold neobrutal drop shadows, ~75% of original) */
+  --shadow-sm: 5px 5px 0 hsl(var(--border) / 1);
+  --shadow-md: 6px 6px 0 hsl(var(--border) / 1);
+  --shadow-lg: 9px 9px 0 hsl(var(--border) / 1);
+
+  /* Fonts */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica Neue, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Dusk theme */
+  --bg: 248 39% 10%;
+  --surface: 245 35% 18%;
+  --text: 35 100% 92%;
+  --muted: 280 15% 70%;
+  --border: 35 100% 85%;
+  --accent: 16 90% 55%;
+  --accent-contrast: 248 39% 12%;
+  --success: 141.3 81.2% 36.3%;
+  --warn: 38 92% 50%;
+  --danger: 0 72.2% 50.6%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+

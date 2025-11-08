@@ -4,7 +4,7 @@ import { buildConfigCommand } from './commands/build-config.js';
 export function run(): void {
   const program = new Command();
   program
-    .name('parapet')
+    .name('parapetai')
     .description('ParapetAI CLI');
 
   program.addCommand(buildConfigCommand());
