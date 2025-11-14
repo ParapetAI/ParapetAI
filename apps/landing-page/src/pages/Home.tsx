@@ -1,7 +1,7 @@
 import type { FC, ReactElement } from 'react';
 import Button from '../components/ui/Button';
 import CodeSnippet from '../components/ui/CodeSnippet';
-import { Shield, Shuffle, Receipt, Rocket, Sparkles, Book } from 'lucide-react';
+import { Shield, Shuffle, Receipt, Rocket, Sparkles, Book, GitFork } from 'lucide-react';
 
 const Home: FC = () => {
   return (
@@ -31,6 +31,16 @@ const Home: FC = () => {
                 icon={<Book className="h-5 w-5" aria-hidden="true" />}
               >
                 Read the Docs
+              </Button>
+              <Button
+                href="https://github.com/ParapetAI/ParapetAI"
+                size="large"
+                variant="secondary"
+                icon={<GitFork className="h-5 w-5" aria-hidden="true" />}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Fork on GitHub
               </Button>
             </div>
           </div>
@@ -160,9 +170,11 @@ const Home: FC = () => {
           <div>
             <h2 id="cta" className="text-lg font-semibold text-text">Run locally in 60 seconds</h2>
             <p className="mt-1 text-sm text-muted">One container. OpenAI‑compatible. Policies, budgets, and signed receipts.</p>
+            <p className="mt-2 text-sm text-muted">Open source — <a href="https://github.com/ParapetAI/ParapetAI" target="_blank" rel="noopener noreferrer" className="underline">contribute by forking</a>.</p>
           </div>
-          <div>
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button href="/docs/quickstart" size="large" icon={<Rocket className="h-5 w-5" aria-hidden="true" />}>Get Started</Button>
+            <Button href="https://github.com/ParapetAI/ParapetAI" size="large" variant="secondary" icon={<GitFork className="h-5 w-5" aria-hidden="true" />} target="_blank" rel="noopener noreferrer">Fork on GitHub</Button>
           </div>
         </div>
       </section>
