@@ -2,6 +2,15 @@
   "name": "@parapetai/cli",
   "version": "0.1.6",
   "description": "Command-line interface for building encrypted ParapetAI bootstrap configurations",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ParapetAI/ParapetAI.git"
+  },
+  "homepage": "https://github.com/ParapetAI/ParapetAI#readme",
+  "bugs": {
+    "url": "https://github.com/ParapetAI/ParapetAI/issues"
+  },
   "private": false,
   "bin": {
     "parapetai": "./bin/parapetai"

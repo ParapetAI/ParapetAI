@@ -1,5 +1,6 @@
 {
   "name": "@parapetai/runtime",
+  "license": "MIT",
   "private": true,
   "type": "commonjs",
   "scripts": {

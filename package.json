@@ -1,7 +1,11 @@
 {
   "name": "@parapetai/parapetai",
   "version": "2.0.0",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ParapetAI/ParapetAI.git"
+  },
   "type": "module",
   "workspaces": [
     "apps/*",
