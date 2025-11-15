@@ -32,10 +32,16 @@ const ToggleExamples: FC = () => {
 
   const pythonLines: string[] = [
     'import requests',
+    'import os',
     '',
-    'resp = requests.post("http://localhost:8000/v1/chat/completions", json={',
+    'url = "http://localhost:8000/v1/chat/completions"',
+    'token = os.getenv("PARAPET_SERVICE_MYAPP_TOKEN")',
+    '',
+    'resp = requests.post(url, json={',
     '  "model": "gpt-4o-mini",',
     '  "messages": [{ "role": "user", "content": "Hello" }]',
+    '}, headers={',
+    '  "Authorization": f"Bearer {token}"',
     '})',
     'data = resp.json()',
     'print(data)',

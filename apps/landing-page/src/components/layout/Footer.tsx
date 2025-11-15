@@ -6,7 +6,7 @@ const Footer: FC = () => {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-muted flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span>&copy; {new Date().getFullYear()} ParapetAI. Open source — <a href="https://github.com/ParapetAI/ParapetAI" target="_blank" rel="noopener noreferrer" className="underline">contribute by forking</a>.</span>
+        <span>&copy; {new Date().getFullYear()} ParapetAI. Open source — <a href="https://github.com/ParapetAI/ParapetAI/fork" target="_blank" rel="noopener noreferrer" className="underline">contribute by forking</a>.</span>
         <nav className="flex items-center gap-4">
           <Link to="/docs" className="underline">Docs</Link>
           <Link to="/docs/quickstart" className="underline">Quickstart</Link>

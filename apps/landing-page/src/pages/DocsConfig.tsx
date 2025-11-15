@@ -1,15 +1,77 @@
 import type { FC } from 'react';
 import CodeSnippet from '../components/ui/CodeSnippet';
+import SEO from '../components/seo/SEO';
+import FAQ from '../components/docs/FAQ';
 
 const DocsConfig: FC = () => {
+  const faqItems = [
+    {
+      question: 'How do I configure ParapetAI?',
+      answer: 'Create a parapet.yaml file with tenants, routes, and services. Use environment variable references (ENV:NAME) for secrets. The CLI validates the schema and encrypts it into a bootstrap file that the runtime reads.',
+    },
+    {
+      question: 'What is the minimum configuration needed?',
+      answer: 'You need at least one tenant with a daily spend cap, one route with a provider configuration, and one service with an allowed route. The CLI will guide you through validation.',
+    },
+    {
+      question: 'How do I reference secrets in the configuration?',
+      answer: 'Use ENV:VARIABLE_NAME format for provider keys, service tokens, and webhook secrets. The CLI will prompt for missing values or read them from your environment.',
+    },
+    {
+      question: 'Can I use multiple providers?',
+      answer: 'Yes, define multiple routes with different provider configurations. Each route can point to different endpoints, models, or provider types (OpenAI or local).',
+    },
+    {
+      question: 'How do I set up policies?',
+      answer: 'Add a policy section to your route with max_tokens_in, max_tokens_out, budget_daily_usd, drift_strict, and redaction settings. Policies are enforced per-route.',
+    },
+    {
+      question: 'What parameters are allowed for chat completions?',
+      answer: 'ParapetAI supports all standard OpenAI chat completion parameters including model, messages, temperature, max_tokens, stream, and more. See the configuration docs for the complete list.',
+    },
+  ];
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://parapetai.com/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Documentation',
+        item: 'https://parapetai.com/docs',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Configuration',
+        item: 'https://parapetai.com/docs/config',
+      },
+    ],
+  };
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
-      <header className="max-w-3xl">
-        <h1 className="text-4xl font-semibold tracking-tight text-text sm:text-5xl">Configuration</h1>
-        <p className="mt-4 text-base leading-7 text-muted">
-          Parapet uses a single YAML file. The CLI validates, hydrates secrets from env references, and outputs an encrypted bootstrap passed to the runtime via environment variables.
-        </p>
-      </header>
+    <>
+      <SEO
+        title="Configuration Reference - ParapetAI"
+        description="Complete configuration reference for ParapetAI. Learn the YAML schema, environment variable references, policy options, and all supported parameters for chat completions and embeddings."
+        keywords="ParapetAI configuration, LLM gateway config, YAML schema, AI gateway setup, self-hosted LLM gateway configuration"
+        canonical="https://parapetai.com/docs/config"
+        structuredData={breadcrumbSchema}
+      />
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
+        <header className="max-w-3xl">
+          <h1 className="text-4xl font-semibold tracking-tight text-text sm:text-5xl">Configuration</h1>
+          <p className="mt-4 text-base leading-7 text-muted">
+            ParapetAI uses a single YAML file. The CLI validates, hydrates secrets from env references, and outputs an encrypted bootstrap passed to the runtime via environment variables.
+          </p>
+        </header>
 
       <section className="mt-8">
         <CodeSnippet
@@ -562,7 +624,10 @@ const DocsConfig: FC = () => {
           lines={['dimensions, encoding_format, user']}
         />
       </section>
+
+      <FAQ items={faqItems} />
     </div>
+    </>
   );
 };
 

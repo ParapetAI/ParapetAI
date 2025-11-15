@@ -1,16 +1,52 @@
 import type { FC, ReactElement } from 'react';
+import SEO from '../components/seo/SEO';
+import FAQ from '../components/docs/FAQ';
 import { Shield, Workflow, Gavel, PiggyBank, EyeOff, Activity, PlugZap, Database, Webhook, Layers, RotateCcw, Cog } from 'lucide-react';
 
 const Features: FC = () => {
+  const faqItems = [
+    {
+      question: 'What features does ParapetAI provide?',
+      answer: 'ParapetAI provides authentication, route selection, policy enforcement, budget tracking, data redaction, drift detection, provider abstraction, telemetry, webhooks, caching, retry logic, and encrypted configuration. It supports OpenAI-compatible chat completions and embeddings with SSE streaming.',
+    },
+    {
+      question: 'Does ParapetAI include a dashboard?',
+      answer: 'No, ParapetAI does not include a dashboard UI. Configuration is done via YAML files and the CLI. Telemetry is stored in SQLite and can be queried directly or via webhooks.',
+    },
+    {
+      question: 'How does budget tracking work?',
+      answer: 'ParapetAI uses micro-dollar accounting with daily caps per tenant and per route. Costs are estimated before each request, reserved, then settled after completion. This prevents budget overruns.',
+    },
+    {
+      question: 'What is drift detection?',
+      answer: 'Drift detection flags when requests use models, fingerprints, or costs that differ from expectations. Strict mode blocks unauthorized models, while detection mode only flags anomalies for observability.',
+    },
+    {
+      question: 'Can I use custom redaction patterns?',
+      answer: 'Yes, ParapetAI includes built-in patterns for email, API keys, IP addresses, and phone numbers. You can also define custom regex patterns for any sensitive data you need to protect.',
+    },
+    {
+      question: 'How do webhooks work?',
+      answer: 'ParapetAI sends HMAC-SHA256 signed webhooks for policy decisions and provider errors. Receivers can verify signatures to ensure authenticity. Webhooks include policy context, costs, and optional prompt snippets.',
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
-      <header className="max-w-3xl">
-        <h1 className="text-4xl font-semibold tracking-tight text-text sm:text-5xl">Features</h1>
-        <p className="mt-4 text-base leading-7 text-muted">
-          OpenAI‑compatible chat and embeddings (SSE streaming). Local OpenAI‑style endpoints.
-          Not included: dashboard, rate limiter, circuit breaker.
-        </p>
-      </header>
+    <>
+      <SEO
+        title="Features - ParapetAI"
+        description="ParapetAI provides authentication, policy enforcement, budget tracking, data redaction, drift detection, and signed webhooks. OpenAI-compatible chat and embeddings with SSE streaming support."
+        keywords="LLM gateway features, AI gateway capabilities, budget tracking, data redaction, model drift detection, OpenAI compatible API, LLM policy enforcement"
+        canonical="https://parapetai.com/features"
+      />
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
+        <header className="max-w-3xl">
+          <h1 className="text-4xl font-semibold tracking-tight text-text sm:text-5xl">Features</h1>
+          <p className="mt-4 text-base leading-7 text-muted">
+            OpenAI‑compatible chat and embeddings (SSE streaming). Local OpenAI‑style endpoints.
+            Not included: dashboard, rate limiter, circuit breaker.
+          </p>
+        </header>
 
       <section className="mt-12 grid gap-6 sm:grid-cols-2">
         <FeatureCard
@@ -92,7 +128,10 @@ const Features: FC = () => {
           </li>
         </ul>
       </section>
+
+      <FAQ items={faqItems} />
     </div>
+    </>
   );
 };
 
