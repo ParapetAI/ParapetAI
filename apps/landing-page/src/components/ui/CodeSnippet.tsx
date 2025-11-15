@@ -23,7 +23,7 @@ const CodeSnippet: FC<CodeSnippetProps> = ({ title, lines, headerRight }) => {
   };
 
   return (
-    <div className="relative w-full overflow-hidden rounded-none border-[3px] border-border bg-surface shadow-md">
+    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-none border-[3px] border-border bg-surface shadow-md">
       <div className="flex items-center justify-between border-b-[3px] border-border px-4 py-2 text-xs text-muted">
           <div className="flex items-center gap-2">
             <span>{title}</span>
@@ -40,7 +40,7 @@ const CodeSnippet: FC<CodeSnippetProps> = ({ title, lines, headerRight }) => {
             <span aria-live="polite">{copied ? 'Copied!' : 'Copy'}</span>
           </button>
         </div>
-      <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed text-text/90">
+      <pre className="flex-1 overflow-auto p-4 text-[13px] leading-relaxed text-text/90 whitespace-pre-wrap break-words">
         <code className="font-mono">
           {code}
         </code>

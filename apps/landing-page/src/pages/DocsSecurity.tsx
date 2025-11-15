@@ -1,15 +1,77 @@
 import type { FC } from 'react';
 import CodeSnippet from '../components/ui/CodeSnippet';
+import SEO from '../components/seo/SEO';
+import FAQ from '../components/docs/FAQ';
 
 const DocsSecurity: FC = () => {
+  const faqItems = [
+    {
+      question: 'How does ParapetAI protect my configuration?',
+      answer: 'Configuration is encrypted using AES-256-GCM before being passed to the runtime. The master key is stored separately and never included in the bootstrap. The encrypted bootstrap can only be decrypted with the correct master key.',
+    },
+    {
+      question: 'How do I enforce AI policies and budgets?',
+      answer: 'Configure policies in your route definitions with max_tokens limits, daily budgets, drift_strict mode, and redaction rules. ParapetAI enforces these policies before forwarding requests to providers, preventing unauthorized usage and cost overruns.',
+    },
+    {
+      question: 'How are API keys protected?',
+      answer: 'Provider API keys and webhook secrets are stored in an in-memory vault at runtime. They are never logged, exposed in error messages, or persisted to disk. Secrets are only accessible to the runtime process.',
+    },
+    {
+      question: 'How do I verify webhook signatures?',
+      answer: 'Webhooks include an X-Parapet-Signature header with HMAC-SHA256 signature. Compute the HMAC of the raw request body using your webhook secret and compare it with the signature header using timing-safe comparison.',
+    },
+    {
+      question: 'What redaction patterns are available?',
+      answer: 'ParapetAI includes built-in patterns for email, API keys, IP addresses, and phone numbers. You can also define custom regex patterns. Redaction can warn (scrub) or block (reject) requests containing sensitive data.',
+    },
+    {
+      question: 'How do I rotate secrets?',
+      answer: 'Regenerate your master key or service tokens, then rebuild the configuration using the CLI. The new encrypted bootstrap will use the updated secrets. Rotate provider keys by updating your environment variables and rebuilding.',
+    },
+  ];
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://parapetai.com/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Documentation',
+        item: 'https://parapetai.com/docs',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Security',
+        item: 'https://parapetai.com/docs/security',
+      },
+    ],
+  };
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
-      <header className="max-w-3xl">
-        <h1 className="text-4xl font-semibold tracking-tight text-text sm:text-5xl">Security</h1>
-        <p className="mt-4 text-base leading-7 text-muted">
-          ParapetAI implements multiple layers of security to protect your configuration, secrets, and API access. This document describes our security practices and encryption systems.
-        </p>
-      </header>
+    <>
+      <SEO
+        title="Security - ParapetAI"
+        description="Learn about ParapetAI security practices including AES-256-GCM encryption, authentication, data redaction, webhook signing, and policy enforcement. Best practices for key management and runtime security."
+        keywords="ParapetAI security, LLM gateway security, AI gateway encryption, data redaction, webhook signing, AI policy enforcement, secure LLM gateway"
+        canonical="https://parapetai.com/docs/security"
+        structuredData={breadcrumbSchema}
+      />
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
+        <header className="max-w-3xl">
+          <h1 className="text-4xl font-semibold tracking-tight text-text sm:text-5xl">Security</h1>
+          <p className="mt-4 text-base leading-7 text-muted">
+            ParapetAI implements multiple layers of security to protect your configuration, secrets, and API access. This document describes our security practices and encryption systems.
+          </p>
+        </header>
 
       <section className="mt-12 space-y-12">
         <div>
@@ -347,10 +409,16 @@ const DocsSecurity: FC = () => {
           </p>
         </div>
       </section>
+
+      <FAQ items={faqItems} />
     </div>
+    </>
   );
 };
 
 export default DocsSecurity;
 
 
+
+
+ 

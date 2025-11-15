@@ -19,12 +19,24 @@ const Header: FC = () => {
             >
               Features
             </Link>
+            <Link
+              to="/use-cases"
+              className="inline-flex items-center rounded-none border-[3px] border-border bg-surface px-3 py-1.5 text-sm text-text shadow-md transition-all duration-200 will-change-transform hover:bg-surface/90 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm"
+            >
+              Use Cases
+            </Link>
             <a
               href="/docs"
               className="inline-flex items-center rounded-none border-[3px] border-border bg-surface px-3 py-1.5 text-sm text-text shadow-md transition-all duration-200 will-change-transform hover:bg-surface/90 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm"
             >
               Docs
             </a>
+            <Link
+              to="/about"
+              className="inline-flex items-center rounded-none border-[3px] border-border bg-surface px-3 py-1.5 text-sm text-text shadow-md transition-all duration-200 will-change-transform hover:bg-surface/90 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm"
+            >
+              About
+            </Link>
             <a
               href="https://github.com/ParapetAI/ParapetAI"
               target="_blank"
